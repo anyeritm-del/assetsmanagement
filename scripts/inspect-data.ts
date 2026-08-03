@@ -1,5 +1,4 @@
-import { listProperties, getProperty } from "../lib/repositories/properties";
-import { listItems } from "../lib/repositories/items";
+import { listProperties } from "../lib/repositories/properties";
 import { listBuildings } from "../lib/repositories/buildings";
 import { listFloors } from "../lib/repositories/floors";
 import { listRooms } from "../lib/repositories/rooms";

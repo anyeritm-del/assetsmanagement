@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ImageOff, Pencil } from "lucide-react";
+import { ImageOff, Info, Pencil } from "lucide-react";
 import type { Article, Building, Floor, Item, Room } from "@/lib/types";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
@@ -83,13 +83,24 @@ export function createItemColumns(
       header: "Actions",
       enableSorting: false,
       cell: ({ row }) => (
-        <Link
-          href={`/items/${row.original.id}`}
-          className="inline-flex items-center justify-center rounded-full border border-blue-200 p-2 text-blue-600 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-400 dark:hover:bg-blue-500/10"
-          aria-label="Edit item"
-        >
-          <Pencil className="h-4 w-4" />
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/items/${row.original.id}`}
+            className="inline-flex items-center justify-center rounded-full border border-blue-200 p-2 text-blue-600 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-400 dark:hover:bg-blue-500/10"
+            aria-label="Edit item"
+            title="Edit item"
+          >
+            <Pencil className="h-4 w-4" />
+          </Link>
+          <Link
+            href={`/items/${row.original.id}/view`}
+            className="inline-flex items-center justify-center rounded-full border border-teal-200 p-2 text-teal-600 hover:bg-teal-50 dark:border-teal-900 dark:text-teal-400 dark:hover:bg-teal-500/10"
+            aria-label={`View ${row.original.name}`}
+            title={`View ${row.original.name}`}
+          >
+            <Info className="h-4 w-4" />
+          </Link>
+        </div>
       ),
     },
   ];

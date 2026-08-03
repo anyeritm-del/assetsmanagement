@@ -17,6 +17,9 @@ interface DisposalItemPickerProps {
   articlesById: Map<string, Article>;
   propertyId: string;
   users: User[];
+  /** When set (e.g. arriving from an Item's "Dispose" quick action), opens the dialog with that
+   * item already selected instead of requiring the user to check it in the table below. */
+  preselectedItemId?: string;
 }
 
 export function DisposalItemPicker({
@@ -27,17 +30,31 @@ export function DisposalItemPicker({
   articlesById,
   propertyId,
   users,
+  preselectedItemId,
 }: DisposalItemPickerProps) {
   const router = useRouter();
+  const preselectedItem = preselectedItemId
+    ? items.find((item) => item.id === preselectedItemId)
+    : undefined;
+  // Checkbox-driven selection (fed by DataTable) is kept separate from what's actually shown in
+  // the dialog, so an incoming preselection isn't clobbered by DataTable's own mount effect.
   const [selectedItems, setSelectedItems] = useState<Item[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogItems, setDialogItems] = useState<Item[]>(
+    preselectedItem ? [preselectedItem] : [],
+  );
+  const [dialogOpen, setDialogOpen] = useState(Boolean(preselectedItem));
+
+  function handleOpenDialog() {
+    setDialogItems(selectedItems);
+    setDialogOpen(true);
+  }
 
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
         <button
           type="button"
-          onClick={() => setDialogOpen(true)}
+          onClick={handleOpenDialog}
           disabled={selectedItems.length === 0}
           className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
@@ -57,7 +74,7 @@ export function DisposalItemPicker({
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         propertyId={propertyId}
-        selectedItems={selectedItems}
+        selectedItems={dialogItems}
         users={users}
         action={createDisposalRequestAction}
         onCreated={() => router.push("/disposal-requests")}

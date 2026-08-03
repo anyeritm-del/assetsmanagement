@@ -9,11 +9,16 @@ import { listRoomsByProperty } from "@/lib/repositories/rooms";
 import { listUsers } from "@/lib/repositories/users";
 import { getSelectedPropertyContext } from "@/lib/selectedProperty";
 
-export default async function NewMovementRequestPage() {
+export default async function NewMovementRequestPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ itemId?: string }>;
+}) {
   const { selected } = await getSelectedPropertyContext();
   if (!selected) {
     redirect("/movement-requests");
   }
+  const { itemId } = await searchParams;
 
   const [items, buildings, floors, rooms, articles, users] = await Promise.all([
     listItemsByProperty(selected.id),
@@ -49,6 +54,7 @@ export default async function NewMovementRequestPage() {
         roomsById={roomsById}
         propertyId={selected.id}
         users={users}
+        preselectedItemId={itemId}
       />
     </div>
   );

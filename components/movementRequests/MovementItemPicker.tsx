@@ -20,6 +20,9 @@ interface MovementItemPickerProps {
   roomsById: Map<string, Room>;
   propertyId: string;
   users: User[];
+  /** When set (e.g. arriving from an Item's "Move" quick action), opens the dialog with that item
+   * already selected instead of requiring the user to check it in the table below. */
+  preselectedItemId?: string;
 }
 
 export function MovementItemPicker({
@@ -33,17 +36,31 @@ export function MovementItemPicker({
   roomsById,
   propertyId,
   users,
+  preselectedItemId,
 }: MovementItemPickerProps) {
   const router = useRouter();
+  const preselectedItem = preselectedItemId
+    ? items.find((item) => item.id === preselectedItemId)
+    : undefined;
+  // Checkbox-driven selection (fed by DataTable) is kept separate from what's actually shown in
+  // the dialog, so an incoming preselection isn't clobbered by DataTable's own mount effect.
   const [selectedItems, setSelectedItems] = useState<Item[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogItems, setDialogItems] = useState<Item[]>(
+    preselectedItem ? [preselectedItem] : [],
+  );
+  const [dialogOpen, setDialogOpen] = useState(Boolean(preselectedItem));
+
+  function handleOpenDialog() {
+    setDialogItems(selectedItems);
+    setDialogOpen(true);
+  }
 
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
         <button
           type="button"
-          onClick={() => setDialogOpen(true)}
+          onClick={handleOpenDialog}
           disabled={selectedItems.length === 0}
           className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
@@ -63,7 +80,7 @@ export function MovementItemPicker({
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         propertyId={propertyId}
-        selectedItems={selectedItems}
+        selectedItems={dialogItems}
         buildings={buildings}
         floors={floors}
         rooms={rooms}
