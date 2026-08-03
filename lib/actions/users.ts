@@ -18,6 +18,7 @@ function parseUserForm(formData: FormData) {
     email: formData.get("email"),
     level: formData.get("level"),
     status: formData.get("status"),
+    assigned_property_id: formData.get("assigned_property_id") || null,
   });
 }
 

@@ -1,18 +1,20 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { USER_LEVELS, USER_LEVEL_LABELS, USER_STATUSES } from "@/lib/constants";
-import type { User } from "@/lib/types";
+import type { Property, User } from "@/lib/types";
 import type { ActionResult } from "@/lib/actions/users";
 
 interface UserFormProps {
   user?: User;
+  properties: Property[];
   action: (formData: FormData) => Promise<ActionResult>;
 }
 
-export function UserForm({ user, action }: UserFormProps) {
+export function UserForm({ user, properties, action }: UserFormProps) {
   const router = useRouter();
+  const [level, setLevel] = useState(user?.level ?? "user");
   const [state, formAction, isPending] = useActionState(
     async (_prev: ActionResult | null, formData: FormData) => {
       const result = await action(formData);
@@ -92,17 +94,44 @@ export function UserForm({ user, action }: UserFormProps) {
           </label>
           <select
             name="level"
-            defaultValue={user?.level ?? "user"}
+            value={level}
+            onChange={(event) => setLevel(event.target.value as typeof level)}
             className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800"
           >
-            {USER_LEVELS.map((level) => (
-              <option key={level} value={level}>
-                {USER_LEVEL_LABELS[level]}
+            {USER_LEVELS.map((levelOption) => (
+              <option key={levelOption} value={levelOption}>
+                {USER_LEVEL_LABELS[levelOption]}
               </option>
             ))}
           </select>
         </div>
       </div>
+
+      {level === "property_admin" && (
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+            Assigned Property
+          </label>
+          <select
+            name="assigned_property_id"
+            required
+            defaultValue={user?.assigned_property_id ?? ""}
+            className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800"
+          >
+            <option value="" disabled>
+              Select a hotel
+            </option>
+            {properties.map((property) => (
+              <option key={property.id} value={property.id}>
+                {property.name}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+            Property admin can only access this one hotel -- the property switcher locks to it.
+          </p>
+        </div>
+      )}
 
       {state?.error && (
         <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">

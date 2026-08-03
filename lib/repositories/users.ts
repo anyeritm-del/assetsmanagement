@@ -13,7 +13,14 @@ const HEADERS = [
   "password_hash",
   "created_at",
   "updated_at",
+  // Appended at the end so an already-created Users sheet only needs a column added.
+  "assigned_property_id",
 ];
+
+function toNullableString(value: unknown): string | null {
+  if (value === "" || value === null || value === undefined) return null;
+  return String(value);
+}
 
 function fromRow(record: Record<string, unknown>): User | null {
   const parsed = userSchema.safeParse({
@@ -23,6 +30,7 @@ function fromRow(record: Record<string, unknown>): User | null {
     level: record.level || "user",
     status: record.status || "active",
     password_hash: String(record.password_hash ?? ""),
+    assigned_property_id: toNullableString(record.assigned_property_id),
     created_at: String(record.created_at ?? ""),
     updated_at: String(record.updated_at ?? ""),
   });
@@ -50,6 +58,12 @@ export async function listUsers(): Promise<User[]> {
 
 export async function getUser(id: string): Promise<User | null> {
   return repository.getById(id);
+}
+
+export async function getUserByEmail(email: string): Promise<User | null> {
+  const all = await repository.list();
+  const normalized = email.trim().toLowerCase();
+  return all.find((user) => user.email.trim().toLowerCase() === normalized) ?? null;
 }
 
 export async function createUser(input: UserInput, passwordHash: string): Promise<User> {

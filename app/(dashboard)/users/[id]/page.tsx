@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { FormDrawer } from "@/components/ui/FormDrawer";
 import { UserForm } from "@/components/users/UserForm";
 import { updateUserAction } from "@/lib/actions/users";
+import { listProperties } from "@/lib/repositories/properties";
 import { getUser } from "@/lib/repositories/users";
 
 export default async function EditUserPage({
@@ -10,14 +11,14 @@ export default async function EditUserPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const user = await getUser(id);
+  const [user, properties] = await Promise.all([getUser(id), listProperties()]);
   if (!user) {
     notFound();
   }
 
   return (
     <FormDrawer title="Edit User" backHref="/users">
-      <UserForm user={user} action={updateUserAction.bind(null, user.id)} />
+      <UserForm user={user} properties={properties} action={updateUserAction.bind(null, user.id)} />
     </FormDrawer>
   );
 }

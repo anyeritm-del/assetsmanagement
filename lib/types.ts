@@ -134,6 +134,9 @@ export interface User {
   level: UserLevel;
   status: UserStatus;
   password_hash: string;
+  // Required for "property_admin" -- locks that user's property switcher to this one property.
+  // Null/unused for every other level (they keep access to all properties).
+  assigned_property_id: string | null;
   created_at: string;
   updated_at: string;
 }
