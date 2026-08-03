@@ -38,7 +38,7 @@ export function PhotoUploadField({ existingPhotoUrl }: PhotoUploadFieldProps) {
         <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-dashed border-slate-300 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
           {preview ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={preview} alt="Item preview" className="h-full w-full object-cover" />
+            <img src={preview} alt="Preview" className="h-full w-full object-cover" />
           ) : (
             <ImagePlus className="h-6 w-6 text-slate-300" />
           )}

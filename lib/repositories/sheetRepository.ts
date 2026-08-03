@@ -89,7 +89,10 @@ export function createSheetRepository<T extends { id: string }>(
     await sheets.spreadsheets.values.append({
       spreadsheetId: getSpreadsheetId(),
       range: `${sheetName}!A1`,
-      valueInputOption: "USER_ENTERED",
+      // RAW (not USER_ENTERED) so Sheets never auto-converts date/number-looking strings --
+      // e.g. a "YYYY-MM-DD" date input value would otherwise get silently converted to a Sheets
+      // internal date serial number, which can't be reconstructed back into that same string.
+      valueInputOption: "RAW",
       insertDataOption: "INSERT_ROWS",
       requestBody: { values: [recordToRow(headers, toRow(entity))] },
     });
@@ -111,7 +114,10 @@ export function createSheetRepository<T extends { id: string }>(
     await sheets.spreadsheets.values.update({
       spreadsheetId: getSpreadsheetId(),
       range: `${sheetName}!A${rowIndex}:${lastColumn}${rowIndex}`,
-      valueInputOption: "USER_ENTERED",
+      // RAW (not USER_ENTERED) so Sheets never auto-converts date/number-looking strings --
+      // e.g. a "YYYY-MM-DD" date input value would otherwise get silently converted to a Sheets
+      // internal date serial number, which can't be reconstructed back into that same string.
+      valueInputOption: "RAW",
       requestBody: { values: [recordToRow(headers, toRow(updated))] },
     });
     invalidate(cacheKey);

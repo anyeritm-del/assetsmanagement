@@ -2,6 +2,7 @@ import { LogOut } from "lucide-react";
 import { auth, signOut } from "@/auth";
 import type { Property } from "@/lib/types";
 import { PropertySwitcher } from "./PropertySwitcher";
+import { ScanQrButton } from "./ScanQrButton";
 
 interface HeaderProps {
   properties: Property[];
@@ -15,6 +16,7 @@ export async function Header({ properties, selected }: HeaderProps) {
     <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4 dark:border-slate-800 dark:bg-slate-900">
       <div />
       <div className="flex items-center gap-4">
+        <ScanQrButton />
         <PropertySwitcher properties={properties} selected={selected} />
         <div className="flex items-center gap-3 border-l border-slate-200 pl-4 dark:border-slate-800">
           <span className="text-sm text-slate-600 dark:text-slate-300">

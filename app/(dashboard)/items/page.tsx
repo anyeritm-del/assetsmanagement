@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
-import { DataTable } from "@/components/ui/DataTable";
-import { createItemColumns } from "@/components/items/ItemColumns";
+import { ItemsTable } from "@/components/items/ItemsTable";
+import { listArticles } from "@/lib/repositories/articles";
 import { listBuildingsByProperty } from "@/lib/repositories/buildings";
+import { listFloorsByProperty } from "@/lib/repositories/floors";
 import { listItemsByProperty } from "@/lib/repositories/items";
+import { listRoomsByProperty } from "@/lib/repositories/rooms";
+import { listUsers } from "@/lib/repositories/users";
 import { getSelectedPropertyContext } from "@/lib/selectedProperty";
 
 export default async function ItemsPage() {
@@ -18,11 +21,18 @@ export default async function ItemsPage() {
     );
   }
 
-  const [items, buildings] = await Promise.all([
+  const [items, buildings, floors, rooms, articles, users] = await Promise.all([
     listItemsByProperty(selected.id),
     listBuildingsByProperty(selected.id),
+    listFloorsByProperty(selected.id),
+    listRoomsByProperty(selected.id),
+    listArticles(),
+    listUsers(),
   ]);
   const buildingsById = new Map(buildings.map((building) => [building.id, building]));
+  const floorsById = new Map(floors.map((floor) => [floor.id, floor]));
+  const roomsById = new Map(rooms.map((room) => [room.id, room]));
+  const articlesById = new Map(articles.map((article) => [article.id, article]));
 
   return (
     <div className="space-y-4">
@@ -37,11 +47,14 @@ export default async function ItemsPage() {
           Create New
         </Link>
       </div>
-      <DataTable
-        columns={createItemColumns(buildingsById)}
-        data={items}
-        searchPlaceholder="e.g. filter for item name, code, etc"
-        emptyMessage="No items yet. Create one to get started."
+      <ItemsTable
+        items={items}
+        buildingsById={buildingsById}
+        floorsById={floorsById}
+        roomsById={roomsById}
+        articlesById={articlesById}
+        propertyId={selected.id}
+        users={users}
       />
     </div>
   );

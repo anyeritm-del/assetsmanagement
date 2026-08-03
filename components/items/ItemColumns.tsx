@@ -3,10 +3,15 @@
 import Link from "next/link";
 import type { ColumnDef } from "@tanstack/react-table";
 import { ImageOff, Pencil } from "lucide-react";
-import type { Building, Item } from "@/lib/types";
+import type { Article, Building, Floor, Item, Room } from "@/lib/types";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
-export function createItemColumns(buildingsById: Map<string, Building>): ColumnDef<Item>[] {
+export function createItemColumns(
+  buildingsById: Map<string, Building>,
+  floorsById: Map<string, Floor>,
+  roomsById: Map<string, Room>,
+  articlesById: Map<string, Article>,
+): ColumnDef<Item>[] {
   return [
     {
       id: "photo",
@@ -31,6 +36,19 @@ export function createItemColumns(buildingsById: Map<string, Building>): ColumnD
       header: "Item Name",
     },
     {
+      id: "article",
+      header: "Article",
+      cell: ({ row }) => {
+        const article = row.original.article_id ? articlesById.get(row.original.article_id) : null;
+        return article?.name ?? "—";
+      },
+    },
+    {
+      accessorKey: "serial_number",
+      header: "Serial Number",
+      cell: ({ row }) => row.original.serial_number || "—",
+    },
+    {
       accessorKey: "category",
       header: "Category",
       cell: ({ row }) => row.original.category || "—",
@@ -42,11 +60,13 @@ export function createItemColumns(buildingsById: Map<string, Building>): ColumnD
     },
     {
       id: "location",
-      header: "Building / Floor",
+      header: "Building / Floor / Room",
       cell: ({ row }) => {
         const building = buildingsById.get(row.original.building_id);
-        const floor = row.original.floor_number;
-        return `${building?.name ?? "Unknown"}${floor !== null ? ` / Floor ${floor}` : ""}`;
+        const room = row.original.room_id ? roomsById.get(row.original.room_id) : null;
+        const floor = room ? floorsById.get(room.floor_id) : null;
+        const parts = [building?.name ?? "Unknown", floor?.name, room?.name].filter(Boolean);
+        return parts.join(" / ");
       },
     },
     {

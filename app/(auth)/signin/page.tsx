@@ -3,9 +3,9 @@ import { signIn } from "@/auth";
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; callbackUrl?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, callbackUrl } = await searchParams;
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-slate-50 px-4 dark:bg-slate-950">
@@ -17,19 +17,20 @@ export default async function SignInPage({
           Archipelago Asset Management
         </h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-          Sign in with your Archipelago Google account.
+          Sign in with your {process.env.ALLOWED_EMAIL_DOMAIN ?? "Archipelago"} Google account.
         </p>
 
         {error && (
           <p className="mt-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
-            Access denied. Please sign in with an @archipelagohotels.com account.
+            Access denied. Please sign in with an
+            {process.env.ALLOWED_EMAIL_DOMAIN ? ` @${process.env.ALLOWED_EMAIL_DOMAIN}` : " authorized"} account.
           </p>
         )}
 
         <form
           action={async () => {
             "use server";
-            await signIn("google", { redirectTo: "/" });
+            await signIn("google", { redirectTo: callbackUrl || "/" });
           }}
         >
           <button
