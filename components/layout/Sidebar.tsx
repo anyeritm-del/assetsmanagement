@@ -20,6 +20,7 @@ import {
   Users,
   Wrench,
 } from "lucide-react";
+import { useMobileNav } from "./MobileNavContext";
 
 const TOP_NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -166,6 +167,7 @@ function NavGroupSection({
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { open, close } = useMobileNav();
   const allHrefs = [
     ...TOP_NAV_ITEMS.map((item) => item.href),
     ...NAV_GROUPS.flatMap((group) => group.children.map((child) => child.href)),
@@ -173,8 +175,21 @@ export function Sidebar() {
   const activeHref = findActiveHref(pathname, allHrefs);
 
   return (
-    <aside className="flex h-full w-64 shrink-0 flex-col border-r border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
-      <div className="flex items-center gap-3 px-6 py-6">
+    <>
+      {open && (
+        <button
+          type="button"
+          aria-label="Close menu"
+          onClick={close}
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+        />
+      )}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex h-full w-64 shrink-0 flex-col overflow-y-auto border-r border-slate-200 bg-white transition-transform duration-200 ease-in-out dark:border-slate-800 dark:bg-slate-900 md:static md:z-auto md:translate-x-0 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center gap-3 px-6 py-6">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-lg font-bold text-white">
           A
         </div>
@@ -207,6 +222,7 @@ export function Sidebar() {
           <NavGroupSection key={group.label} group={group} activeHref={activeHref} />
         ))}
       </nav>
-    </aside>
+      </aside>
+    </>
   );
 }

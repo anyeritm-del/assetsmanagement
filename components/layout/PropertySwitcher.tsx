@@ -30,11 +30,11 @@ export function PropertySwitcher({ properties, selected }: PropertySwitcherProps
         type="button"
         onClick={() => setOpen((prev) => !prev)}
         disabled={isPending}
-        className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+        className="flex max-w-[55vw] items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 sm:max-w-xs"
       >
-        <Building2 className="h-4 w-4 text-slate-400" />
-        {selected ? selected.name : "Select a property"}
-        <ChevronDown className="h-4 w-4 text-slate-400" />
+        <Building2 className="h-4 w-4 shrink-0 text-slate-400" />
+        <span className="truncate">{selected ? selected.name : "Select a property"}</span>
+        <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" />
       </button>
       {open && (
         <>
