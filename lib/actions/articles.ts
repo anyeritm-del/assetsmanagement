@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { articleInputSchema } from "../validation/article";
 import { createArticle, updateArticle } from "../repositories/articles";
+import { assertCanMutate } from "../viewOnlyGuard";
 
 export interface ActionResult {
   success: boolean;
@@ -20,6 +21,9 @@ function parseArticleForm(formData: FormData) {
 }
 
 export async function createArticleAction(formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseArticleForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -30,6 +34,9 @@ export async function createArticleAction(formData: FormData): Promise<ActionRes
 }
 
 export async function updateArticleAction(id: string, formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseArticleForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };

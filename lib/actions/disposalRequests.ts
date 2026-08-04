@@ -9,6 +9,7 @@ import {
   getDisposalRequest,
 } from "../repositories/disposalRequests";
 import { listDisposalRequestItems } from "../repositories/disposalRequestItems";
+import { assertCanMutate } from "../viewOnlyGuard";
 
 export interface ActionResult {
   success: boolean;
@@ -21,6 +22,9 @@ function extractPhoto(formData: FormData): File | null {
 }
 
 export async function createDisposalRequestAction(formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = disposalRequestInputSchema.safeParse({
     property_id: formData.get("property_id"),
     reason: formData.get("reason"),
@@ -59,6 +63,9 @@ export async function decideDisposalRequestAction(
   id: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = disposalDecisionSchema.safeParse({
     decision: formData.get("decision"),
   });

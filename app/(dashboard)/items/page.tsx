@@ -9,6 +9,7 @@ import { listItemsByProperty } from "@/lib/repositories/items";
 import { listRoomsByProperty } from "@/lib/repositories/rooms";
 import { listUsers } from "@/lib/repositories/users";
 import { getSelectedPropertyContext } from "@/lib/selectedProperty";
+import { isViewOnly } from "@/lib/viewOnlyGuard";
 
 export default async function ItemsPage() {
   const { selected } = await getSelectedPropertyContext();
@@ -21,13 +22,14 @@ export default async function ItemsPage() {
     );
   }
 
-  const [items, buildings, floors, rooms, articles, users] = await Promise.all([
+  const [items, buildings, floors, rooms, articles, users, viewOnly] = await Promise.all([
     listItemsByProperty(selected.id),
     listBuildingsByProperty(selected.id),
     listFloorsByProperty(selected.id),
     listRoomsByProperty(selected.id),
     listArticles(),
     listUsers(),
+    isViewOnly(),
   ]);
   const buildingsById = new Map(buildings.map((building) => [building.id, building]));
   const floorsById = new Map(floors.map((floor) => [floor.id, floor]));
@@ -39,13 +41,15 @@ export default async function ItemsPage() {
       <Breadcrumb items={[{ label: selected.name }, { label: "Items" }]} />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Items</h1>
-        <Link
-          href="/items/new"
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" />
-          Create New
-        </Link>
+        {!viewOnly && (
+          <Link
+            href="/items/new"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" />
+            Create New
+          </Link>
+        )}
       </div>
       <ItemsTable
         items={items}
@@ -55,6 +59,7 @@ export default async function ItemsPage() {
         articlesById={articlesById}
         propertyId={selected.id}
         users={users}
+        viewOnly={viewOnly}
       />
     </div>
   );

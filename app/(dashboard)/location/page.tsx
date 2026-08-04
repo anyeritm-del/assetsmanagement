@@ -2,9 +2,10 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { DataTable } from "@/components/ui/DataTable";
-import { buildingColumns } from "@/components/location/BuildingColumns";
+import { createBuildingColumns } from "@/components/location/BuildingColumns";
 import { listBuildingsByProperty } from "@/lib/repositories/buildings";
 import { getSelectedPropertyContext } from "@/lib/selectedProperty";
+import { isViewOnly } from "@/lib/viewOnlyGuard";
 
 export default async function LocationPage() {
   const { selected } = await getSelectedPropertyContext();
@@ -17,23 +18,29 @@ export default async function LocationPage() {
     );
   }
 
-  const buildings = await listBuildingsByProperty(selected.id);
+  const [buildings, viewOnly] = await Promise.all([
+    listBuildingsByProperty(selected.id),
+    isViewOnly(),
+  ]);
+  const columns = createBuildingColumns(viewOnly);
 
   return (
     <div className="space-y-4">
       <Breadcrumb items={[{ label: selected.name }, { label: "Buildings (Blocks)" }]} />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Location</h1>
-        <Link
-          href="/location/new"
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" />
-          Create New
-        </Link>
+        {!viewOnly && (
+          <Link
+            href="/location/new"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" />
+            Create New
+          </Link>
+        )}
       </div>
       <DataTable
-        columns={buildingColumns}
+        columns={columns}
         data={buildings}
         searchPlaceholder="e.g. filter for building name, block, etc"
         emptyMessage="No buildings yet. Create one to get started."

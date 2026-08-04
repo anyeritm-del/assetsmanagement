@@ -6,6 +6,7 @@ import {
   createMaintenanceAreaType,
   updateMaintenanceAreaType,
 } from "../repositories/maintenanceAreaTypes";
+import { assertCanMutate } from "../viewOnlyGuard";
 
 export interface ActionResult {
   success: boolean;
@@ -19,6 +20,9 @@ function parseMaintenanceAreaTypeForm(formData: FormData) {
 }
 
 export async function createMaintenanceAreaTypeAction(formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseMaintenanceAreaTypeForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -32,6 +36,9 @@ export async function updateMaintenanceAreaTypeAction(
   id: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseMaintenanceAreaTypeForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };

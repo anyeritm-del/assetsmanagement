@@ -12,6 +12,7 @@ import {
 import { getItem } from "../repositories/items";
 import { getRoom } from "../repositories/rooms";
 import { getPMScheduleDueStatus } from "../pmScheduleStatus";
+import { assertCanMutate } from "../viewOnlyGuard";
 
 export interface ActionResult {
   success: boolean;
@@ -34,6 +35,9 @@ function parsePMScheduleForm(formData: FormData) {
 }
 
 export async function createPMScheduleAction(formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parsePMScheduleForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -47,6 +51,9 @@ export async function updatePMScheduleAction(
   id: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parsePMScheduleForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -62,6 +69,9 @@ export interface RunPMCheckResult extends ActionResult {
 }
 
 export async function runPMCheckAction(propertyId: string): Promise<RunPMCheckResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const session = await auth();
   if (!session?.user) {
     return { success: false, error: "Not signed in" };

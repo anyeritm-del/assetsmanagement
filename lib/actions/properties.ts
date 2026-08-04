@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { SELECTED_PROPERTY_COOKIE } from "../constants";
 import { propertyInputSchema } from "../validation/property";
 import { createProperty, updateProperty } from "../repositories/properties";
+import { assertCanMutate } from "../viewOnlyGuard";
 
 export interface ActionResult {
   success: boolean;
@@ -20,6 +21,9 @@ function parsePropertyForm(formData: FormData) {
 }
 
 export async function createPropertyAction(formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parsePropertyForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -34,6 +38,9 @@ export async function updatePropertyAction(
   id: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parsePropertyForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -44,6 +51,8 @@ export async function updatePropertyAction(
   return { success: true };
 }
 
+// Not gated -- switching which property you're viewing is not a mutation of app data, and
+// View-only users still need to be able to browse different hotels.
 export async function setSelectedProperty(propertyId: string): Promise<void> {
   const cookieStore = await cookies();
   cookieStore.set(SELECTED_PROPERTY_COOKIE, propertyId, {

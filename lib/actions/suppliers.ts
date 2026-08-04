@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { supplierInputSchema } from "../validation/supplier";
 import { createSupplier, updateSupplier } from "../repositories/suppliers";
+import { assertCanMutate } from "../viewOnlyGuard";
 
 export interface ActionResult {
   success: boolean;
@@ -20,6 +21,9 @@ function parseSupplierForm(formData: FormData) {
 }
 
 export async function createSupplierAction(formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseSupplierForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -33,6 +37,9 @@ export async function updateSupplierAction(
   id: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseSupplierForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };

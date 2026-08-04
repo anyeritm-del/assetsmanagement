@@ -9,6 +9,7 @@ import {
   updateOutgoingRecord,
 } from "../repositories/outgoingRecords";
 import { getActiveStage } from "../outgoingRecordStatus";
+import { assertCanMutate } from "../viewOnlyGuard";
 import type { OutgoingRecord } from "../types";
 
 export interface ActionResult {
@@ -28,6 +29,9 @@ function parseItemLines(formData: FormData) {
 }
 
 export async function createOutgoingRecordAction(formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = outgoingRecordInputSchema.safeParse({
     source_property_id: formData.get("source_property_id"),
     destination_property_id: formData.get("destination_property_id"),
@@ -59,6 +63,9 @@ export async function decideOutgoingStageAction(
   stage: "fc" | "hr" | "gm",
   formData: FormData,
 ): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = stageDecisionSchema.safeParse({
     decision: formData.get("decision"),
     notes: formData.get("notes"),

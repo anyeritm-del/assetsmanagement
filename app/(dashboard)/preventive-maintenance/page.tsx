@@ -8,6 +8,7 @@ import { getPMScheduleDueStatus } from "@/lib/pmScheduleStatus";
 import { listItemsByProperty } from "@/lib/repositories/items";
 import { listPMSchedulesByProperty } from "@/lib/repositories/pmSchedules";
 import { getSelectedPropertyContext } from "@/lib/selectedProperty";
+import { isViewOnly } from "@/lib/viewOnlyGuard";
 
 export default async function PreventiveMaintenancePage() {
   const { selected } = await getSelectedPropertyContext();
@@ -20,10 +21,11 @@ export default async function PreventiveMaintenancePage() {
     );
   }
 
-  const [schedules, items, allowed] = await Promise.all([
+  const [schedules, items, allowed, viewOnly] = await Promise.all([
     listPMSchedulesByProperty(selected.id),
     listItemsByProperty(selected.id),
     canManageMaintenance(),
+    isViewOnly(),
   ]);
   const itemsById = new Map(items.map((item) => [item.id, item]));
 
@@ -39,25 +41,28 @@ export default async function PreventiveMaintenancePage() {
           Preventive Maintenance
         </h1>
         <div className="flex items-center gap-3">
-          {allowed ? (
-            <RunPMCheckButton propertyId={selected.id} />
-          ) : (
-            <button
-              type="button"
-              disabled
-              title="You don't have permission to run PM Check. Ask an administrator to grant you &quot;Can Manage Maintenance&quot; in Users."
-              className="inline-flex cursor-not-allowed items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-400 dark:border-slate-700 dark:text-slate-600"
+          {!viewOnly &&
+            (allowed ? (
+              <RunPMCheckButton propertyId={selected.id} />
+            ) : (
+              <button
+                type="button"
+                disabled
+                title="You don't have permission to run PM Check. Ask an administrator to grant you &quot;Can Manage Maintenance&quot; in Users."
+                className="inline-flex cursor-not-allowed items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-400 dark:border-slate-700 dark:text-slate-600"
+              >
+                Run PM Check
+              </button>
+            ))}
+          {!viewOnly && (
+            <Link
+              href="/preventive-maintenance/new"
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
             >
-              Run PM Check
-            </button>
+              <Plus className="h-4 w-4" />
+              Add Schedule
+            </Link>
           )}
-          <Link
-            href="/preventive-maintenance/new"
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-          >
-            <Plus className="h-4 w-4" />
-            Add Schedule
-          </Link>
         </div>
       </div>
 
@@ -84,7 +89,7 @@ export default async function PreventiveMaintenancePage() {
         </div>
       </div>
 
-      <PMSchedulesTable schedules={schedules} itemsById={itemsById} />
+      <PMSchedulesTable schedules={schedules} itemsById={itemsById} viewOnly={viewOnly} />
     </div>
   );
 }

@@ -7,6 +7,7 @@ import { listAllMovementRequestItems } from "@/lib/repositories/movementRequestI
 import { listMovementRequestsByProperty } from "@/lib/repositories/movementRequests";
 import { listUsers } from "@/lib/repositories/users";
 import { getSelectedPropertyContext } from "@/lib/selectedProperty";
+import { isViewOnly } from "@/lib/viewOnlyGuard";
 import type { MovementRequestItem } from "@/lib/types";
 
 export default async function MovementRequestsPage() {
@@ -20,11 +21,12 @@ export default async function MovementRequestsPage() {
     );
   }
 
-  const [requests, items, users, allRequestItems] = await Promise.all([
+  const [requests, items, users, allRequestItems, viewOnly] = await Promise.all([
     listMovementRequestsByProperty(selected.id),
     listItemsByProperty(selected.id),
     listUsers(),
     listAllMovementRequestItems(),
+    isViewOnly(),
   ]);
   const itemsById = new Map(items.map((item) => [item.id, item]));
   const usersById = new Map(users.map((user) => [user.id, user]));
@@ -42,13 +44,15 @@ export default async function MovementRequestsPage() {
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
           Movement Requests
         </h1>
-        <Link
-          href="/movement-requests/new"
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" />
-          Create New
-        </Link>
+        {!viewOnly && (
+          <Link
+            href="/movement-requests/new"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" />
+            Create New
+          </Link>
+        )}
       </div>
       <MovementRequestsTable
         requests={requests}

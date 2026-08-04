@@ -10,6 +10,7 @@ import { getMovementRequest } from "@/lib/repositories/movementRequests";
 import { getProperty } from "@/lib/repositories/properties";
 import { getRoom } from "@/lib/repositories/rooms";
 import { getUser } from "@/lib/repositories/users";
+import { isViewOnly } from "@/lib/viewOnlyGuard";
 
 export default async function MovementRequestDetailPage({
   params,
@@ -22,7 +23,7 @@ export default async function MovementRequestDetailPage({
     notFound();
   }
 
-  const [lines, allItems, approver, property, destinationBuilding, destinationRoom] =
+  const [lines, allItems, approver, property, destinationBuilding, destinationRoom, viewOnly] =
     await Promise.all([
       listMovementRequestItems(request.id),
       listItems(),
@@ -30,6 +31,7 @@ export default async function MovementRequestDetailPage({
       getProperty(request.property_id),
       getBuilding(request.destination_building_id),
       request.destination_room_id ? getRoom(request.destination_room_id) : null,
+      isViewOnly(),
     ]);
   const itemsById = new Map(allItems.map((item) => [item.id, item]));
 
@@ -102,7 +104,7 @@ export default async function MovementRequestDetailPage({
         </div>
       </div>
 
-      {request.status === "pending" && (
+      {request.status === "pending" && !viewOnly && (
         <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
           <h2 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
             Decision

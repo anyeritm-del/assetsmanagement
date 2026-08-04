@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { articleGroupInputSchema } from "../validation/articleGroup";
 import { createArticleGroup, updateArticleGroup } from "../repositories/articleGroups";
+import { assertCanMutate } from "../viewOnlyGuard";
 
 export interface ActionResult {
   success: boolean;
@@ -16,6 +17,9 @@ function parseArticleGroupForm(formData: FormData) {
 }
 
 export async function createArticleGroupAction(formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseArticleGroupForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -29,6 +33,9 @@ export async function updateArticleGroupAction(
   id: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseArticleGroupForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };

@@ -19,6 +19,7 @@ interface ItemsTableProps {
   articlesById: Map<string, Article>;
   propertyId: string;
   users: User[];
+  viewOnly?: boolean;
 }
 
 export function ItemsTable({
@@ -29,6 +30,7 @@ export function ItemsTable({
   articlesById,
   propertyId,
   users,
+  viewOnly = false,
 }: ItemsTableProps) {
   const router = useRouter();
   const [selectedItems, setSelectedItems] = useState<Item[]>([]);
@@ -52,18 +54,26 @@ export function ItemsTable({
     window.open(`/items/print-labels?ids=${ids}`, "_blank");
   }
 
+  const columns = viewOnly
+    ? createItemColumns(buildingsById, floorsById, roomsById, articlesById).filter(
+        (column) => column.id !== "actions",
+      )
+    : createItemColumns(buildingsById, floorsById, roomsById, articlesById);
+
   return (
     <div className="space-y-3">
       <div className="flex justify-end gap-3">
-        <button
-          type="button"
-          onClick={() => setDisposalDialogOpen(true)}
-          disabled={selectedItems.length === 0}
-          className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <Trash2 className="h-4 w-4" />
-          Create Disposal Request{selectedItems.length > 0 ? ` (${selectedItems.length})` : ""}
-        </button>
+        {!viewOnly && (
+          <button
+            type="button"
+            onClick={() => setDisposalDialogOpen(true)}
+            disabled={selectedItems.length === 0}
+            className="inline-flex items-center gap-2 rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Trash2 className="h-4 w-4" />
+            Create Disposal Request{selectedItems.length > 0 ? ` (${selectedItems.length})` : ""}
+          </button>
+        )}
         <button
           type="button"
           onClick={handlePrintQrCode}
@@ -75,7 +85,7 @@ export function ItemsTable({
         </button>
       </div>
       <DataTable
-        columns={createItemColumns(buildingsById, floorsById, roomsById, articlesById)}
+        columns={columns}
         data={items}
         searchPlaceholder="e.g. filter for item name, code, etc, or scan a label"
         emptyMessage="No items yet. Create one to get started."
@@ -83,15 +93,17 @@ export function ItemsTable({
         enableRowSelection
         onSelectedRowsChange={setSelectedItems}
       />
-      <DisposalRequestDialog
-        open={disposalDialogOpen}
-        onOpenChange={setDisposalDialogOpen}
-        propertyId={propertyId}
-        selectedItems={selectedItems}
-        users={users}
-        action={createDisposalRequestAction}
-        onCreated={() => router.refresh()}
-      />
+      {!viewOnly && (
+        <DisposalRequestDialog
+          open={disposalDialogOpen}
+          onOpenChange={setDisposalDialogOpen}
+          propertyId={propertyId}
+          selectedItems={selectedItems}
+          users={users}
+          action={createDisposalRequestAction}
+          onCreated={() => router.refresh()}
+        />
+      )}
     </div>
   );
 }

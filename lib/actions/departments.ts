@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { departmentInputSchema } from "../validation/department";
 import { createDepartment, updateDepartment } from "../repositories/departments";
+import { assertCanMutate } from "../viewOnlyGuard";
 
 export interface ActionResult {
   success: boolean;
@@ -17,6 +18,9 @@ function parseDepartmentForm(formData: FormData) {
 }
 
 export async function createDepartmentAction(formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseDepartmentForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -30,6 +34,9 @@ export async function updateDepartmentAction(
   id: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseDepartmentForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };

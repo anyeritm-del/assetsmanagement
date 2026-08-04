@@ -12,6 +12,7 @@ import type { Item, PMSchedule } from "@/lib/types";
 interface PMSchedulesTableProps {
   schedules: PMSchedule[];
   itemsById: Map<string, Item>;
+  viewOnly?: boolean;
 }
 
 function formatFrequency(schedule: PMSchedule): string {
@@ -29,7 +30,11 @@ const NEXT_DUE_TEXT_COLOR: Record<string, string> = {
   upcoming: "text-slate-600 dark:text-slate-300",
 };
 
-export function PMSchedulesTable({ schedules, itemsById }: PMSchedulesTableProps) {
+export function PMSchedulesTable({
+  schedules,
+  itemsById,
+  viewOnly = false,
+}: PMSchedulesTableProps) {
   const columns: ColumnDef<PMSchedule>[] = [
     {
       id: "asset",
@@ -105,7 +110,7 @@ export function PMSchedulesTable({ schedules, itemsById }: PMSchedulesTableProps
 
   return (
     <DataTable
-      columns={columns}
+      columns={viewOnly ? columns.filter((column) => column.id !== "actions") : columns}
       data={schedules}
       searchPlaceholder="Search asset, title..."
       emptyMessage="No PM schedules yet. Add one to get started."

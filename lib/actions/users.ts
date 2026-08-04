@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { passwordSchema, userInputSchema } from "../validation/user";
 import { createUser, updateUser } from "../repositories/users";
+import { assertCanMutate } from "../viewOnlyGuard";
 
 const SALT_ROUNDS = 10;
 
@@ -24,6 +25,9 @@ function parseUserForm(formData: FormData) {
 }
 
 export async function createUserAction(formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseUserForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -44,6 +48,9 @@ export async function createUserAction(formData: FormData): Promise<ActionResult
 }
 
 export async function updateUserAction(id: string, formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseUserForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };

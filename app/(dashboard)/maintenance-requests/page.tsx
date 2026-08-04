@@ -8,6 +8,7 @@ import { listMaintenanceAreaTypes } from "@/lib/repositories/maintenanceAreaType
 import { listMaintenanceCategories } from "@/lib/repositories/maintenanceCategories";
 import { listMaintenanceRequestsByProperty } from "@/lib/repositories/maintenanceRequests";
 import { getSelectedPropertyContext } from "@/lib/selectedProperty";
+import { isViewOnly } from "@/lib/viewOnlyGuard";
 
 export default async function MaintenanceRequestsPage() {
   const { selected } = await getSelectedPropertyContext();
@@ -20,12 +21,13 @@ export default async function MaintenanceRequestsPage() {
     );
   }
 
-  const [requests, buildings, areaTypes, categories, employees] = await Promise.all([
+  const [requests, buildings, areaTypes, categories, employees, viewOnly] = await Promise.all([
     listMaintenanceRequestsByProperty(selected.id),
     listBuildingsByProperty(selected.id),
     listMaintenanceAreaTypes(),
     listMaintenanceCategories(),
     listEmployees(),
+    isViewOnly(),
   ]);
   const buildingsById = new Map(buildings.map((building) => [building.id, building]));
   const areaTypesById = new Map(areaTypes.map((areaType) => [areaType.id, areaType]));
@@ -39,13 +41,15 @@ export default async function MaintenanceRequestsPage() {
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
           Maintenance Requests
         </h1>
-        <Link
-          href="/maintenance-requests/new"
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" />
-          New Maintenance Request
-        </Link>
+        {!viewOnly && (
+          <Link
+            href="/maintenance-requests/new"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" />
+            New Maintenance Request
+          </Link>
+        )}
       </div>
       <MaintenanceRequestsTable
         requests={requests}

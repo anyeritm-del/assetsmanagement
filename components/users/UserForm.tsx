@@ -104,6 +104,12 @@ export function UserForm({ user, properties, action }: UserFormProps) {
               </option>
             ))}
           </select>
+          {level === "view_only" && (
+            <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+              Blocked from creating, editing, or deciding anything across every module -- can only
+              browse and switch properties.
+            </p>
+          )}
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import { PurchaseOrdersTable } from "@/components/purchaseOrders/PurchaseOrdersT
 import { listPurchaseOrdersByProperty } from "@/lib/repositories/purchaseOrders";
 import { listSuppliers } from "@/lib/repositories/suppliers";
 import { getSelectedPropertyContext } from "@/lib/selectedProperty";
+import { isViewOnly } from "@/lib/viewOnlyGuard";
 
 export default async function PurchaseOrdersPage() {
   const { selected } = await getSelectedPropertyContext();
@@ -17,9 +18,10 @@ export default async function PurchaseOrdersPage() {
     );
   }
 
-  const [purchaseOrders, suppliers] = await Promise.all([
+  const [purchaseOrders, suppliers, viewOnly] = await Promise.all([
     listPurchaseOrdersByProperty(selected.id),
     listSuppliers(),
+    isViewOnly(),
   ]);
   const suppliersById = new Map(suppliers.map((supplier) => [supplier.id, supplier]));
 
@@ -30,15 +32,21 @@ export default async function PurchaseOrdersPage() {
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
           Purchase Orders
         </h1>
-        <Link
-          href="/purchase-orders/new"
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" />
-          Create New
-        </Link>
+        {!viewOnly && (
+          <Link
+            href="/purchase-orders/new"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" />
+            Create New
+          </Link>
+        )}
       </div>
-      <PurchaseOrdersTable purchaseOrders={purchaseOrders} suppliersById={suppliersById} />
+      <PurchaseOrdersTable
+        purchaseOrders={purchaseOrders}
+        suppliersById={suppliersById}
+        viewOnly={viewOnly}
+      />
     </div>
   );
 }

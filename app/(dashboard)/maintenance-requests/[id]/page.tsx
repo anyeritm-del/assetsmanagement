@@ -18,6 +18,7 @@ import { getItem } from "@/lib/repositories/items";
 import { getMaintenanceAreaType } from "@/lib/repositories/maintenanceAreaTypes";
 import { getMaintenanceCategory } from "@/lib/repositories/maintenanceCategories";
 import { getMaintenanceRequest } from "@/lib/repositories/maintenanceRequests";
+import { isViewOnly } from "@/lib/viewOnlyGuard";
 
 export default async function MaintenanceRequestDetailPage({
   params,
@@ -30,7 +31,7 @@ export default async function MaintenanceRequestDetailPage({
     notFound();
   }
 
-  const [department, building, floor, areaType, category, item, employees, allowed] =
+  const [department, building, floor, areaType, category, item, employees, canManage, viewOnly] =
     await Promise.all([
       request.department_id ? getDepartment(request.department_id) : null,
       getBuilding(request.building_id),
@@ -40,7 +41,9 @@ export default async function MaintenanceRequestDetailPage({
       request.item_id ? getItem(request.item_id) : null,
       listEmployees(),
       canManageMaintenance(),
+      isViewOnly(),
     ]);
+  const allowed = canManage && !viewOnly;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">

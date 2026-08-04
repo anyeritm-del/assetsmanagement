@@ -9,6 +9,7 @@ import {
   getMovementRequest,
 } from "../repositories/movementRequests";
 import { listMovementRequestItems } from "../repositories/movementRequestItems";
+import { assertCanMutate } from "../viewOnlyGuard";
 
 export interface ActionResult {
   success: boolean;
@@ -16,6 +17,9 @@ export interface ActionResult {
 }
 
 export async function createMovementRequestAction(formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = movementRequestInputSchema.safeParse({
     property_id: formData.get("property_id"),
     destination_building_id: formData.get("destination_building_id"),
@@ -47,6 +51,9 @@ export async function decideMovementRequestAction(
   id: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = movementDecisionSchema.safeParse({
     decision: formData.get("decision"),
   });

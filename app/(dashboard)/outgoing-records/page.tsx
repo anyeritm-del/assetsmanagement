@@ -7,6 +7,7 @@ import { listAllOutgoingRecordItems } from "@/lib/repositories/outgoingRecordIte
 import { listOutgoingRecordsByProperty } from "@/lib/repositories/outgoingRecords";
 import { listProperties } from "@/lib/repositories/properties";
 import { getSelectedPropertyContext } from "@/lib/selectedProperty";
+import { isViewOnly } from "@/lib/viewOnlyGuard";
 import type { OutgoingRecordItem } from "@/lib/types";
 
 export default async function OutgoingRecordsPage() {
@@ -20,11 +21,12 @@ export default async function OutgoingRecordsPage() {
     );
   }
 
-  const [records, items, properties, allRecordItems] = await Promise.all([
+  const [records, items, properties, allRecordItems, viewOnly] = await Promise.all([
     listOutgoingRecordsByProperty(selected.id),
     listItemsByProperty(selected.id),
     listProperties(),
     listAllOutgoingRecordItems(),
+    isViewOnly(),
   ]);
   const itemsById = new Map(items.map((item) => [item.id, item]));
   const propertiesById = new Map(properties.map((property) => [property.id, property]));
@@ -42,13 +44,15 @@ export default async function OutgoingRecordsPage() {
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
           Outgoing Loan Requests
         </h1>
-        <Link
-          href="/outgoing-records/new"
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" />
-          Create New
-        </Link>
+        {!viewOnly && (
+          <Link
+            href="/outgoing-records/new"
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" />
+            Create New
+          </Link>
+        )}
       </div>
       <OutgoingRecordsTable
         records={records}

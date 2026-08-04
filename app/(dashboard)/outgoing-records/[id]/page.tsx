@@ -9,6 +9,7 @@ import { listItems } from "@/lib/repositories/items";
 import { listOutgoingRecordItems } from "@/lib/repositories/outgoingRecordItems";
 import { getOutgoingRecord } from "@/lib/repositories/outgoingRecords";
 import { getProperty } from "@/lib/repositories/properties";
+import { isViewOnly } from "@/lib/viewOnlyGuard";
 
 export default async function OutgoingRecordDetailPage({
   params,
@@ -21,11 +22,12 @@ export default async function OutgoingRecordDetailPage({
     notFound();
   }
 
-  const [lines, allItems, sourceProperty, destinationProperty] = await Promise.all([
+  const [lines, allItems, sourceProperty, destinationProperty, viewOnly] = await Promise.all([
     listOutgoingRecordItems(record.id),
     listItems(),
     getProperty(record.source_property_id),
     getProperty(record.destination_property_id),
+    isViewOnly(),
   ]);
   const itemsById = new Map(allItems.map((item) => [item.id, item]));
 
@@ -99,7 +101,7 @@ export default async function OutgoingRecordDetailPage({
         <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">
           Approval Chain
         </h2>
-        <ApprovalPanel record={record} decideAction={decideOutgoingStageAction} />
+        <ApprovalPanel record={record} decideAction={decideOutgoingStageAction} viewOnly={viewOnly} />
       </div>
     </div>
   );

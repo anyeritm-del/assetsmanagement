@@ -24,6 +24,7 @@ interface ApprovalPanelProps {
     stage: "fc" | "hr" | "gm",
     formData: FormData,
   ) => Promise<ActionResult>;
+  viewOnly?: boolean;
 }
 
 function StageIcon({ status }: { status: ApprovalStageStatus }) {
@@ -90,7 +91,7 @@ function DecisionForm({
   );
 }
 
-export function ApprovalPanel({ record, decideAction }: ApprovalPanelProps) {
+export function ApprovalPanel({ record, decideAction, viewOnly = false }: ApprovalPanelProps) {
   const activeStage = getActiveStage(record);
 
   const stages: StageInfo[] = [
@@ -148,7 +149,7 @@ export function ApprovalPanel({ record, decideAction }: ApprovalPanelProps) {
                   &ldquo;{stage.notes}&rdquo;
                 </p>
               )}
-              {activeStage === stage.key && (
+              {activeStage === stage.key && !viewOnly && (
                 <DecisionForm recordId={record.id} stage={stage.key} decideAction={decideAction} />
               )}
             </div>

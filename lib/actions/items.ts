@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { itemInputSchema } from "../validation/item";
 import { createItem, updateItem } from "../repositories/items";
+import { assertCanMutate } from "../viewOnlyGuard";
 
 export interface ActionResult {
   success: boolean;
@@ -42,6 +43,9 @@ function extractPhoto(formData: FormData): File | null {
 }
 
 export async function createItemAction(formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseItemForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -56,6 +60,9 @@ export async function createItemAction(formData: FormData): Promise<ActionResult
 }
 
 export async function updateItemAction(id: string, formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseItemForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };

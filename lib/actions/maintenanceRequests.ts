@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { canManageMaintenance } from "../maintenanceAuth";
+import { assertCanMutate } from "../viewOnlyGuard";
 import {
   maintenanceRequestAssignmentInputSchema,
   maintenanceRequestInputSchema,
@@ -25,6 +26,9 @@ function extractPhoto(formData: FormData): File | null {
 }
 
 export async function createMaintenanceRequestAction(formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = maintenanceRequestInputSchema.safeParse({
     property_id: formData.get("property_id"),
     department_id: formData.get("department_id"),
@@ -66,6 +70,9 @@ export async function updateMaintenanceRequestStatusAction(
   id: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   if (!(await canManageMaintenance())) {
     return { success: false, error: "You don't have permission to update maintenance requests" };
   }
@@ -88,6 +95,9 @@ export async function updateMaintenanceRequestAssignmentAction(
   id: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   if (!(await canManageMaintenance())) {
     return { success: false, error: "You don't have permission to assign maintenance requests" };
   }

@@ -6,6 +6,7 @@ import { DataTable } from "@/components/ui/DataTable";
 import { articleColumns } from "@/components/articles/ArticleColumns";
 import { getArticleGroup } from "@/lib/repositories/articleGroups";
 import { listArticlesByGroup } from "@/lib/repositories/articles";
+import { isViewOnly } from "@/lib/viewOnlyGuard";
 
 export default async function ArticlesPage({
   params,
@@ -18,23 +19,28 @@ export default async function ArticlesPage({
     notFound();
   }
 
-  const articles = await listArticlesByGroup(id);
+  const [articles, viewOnly] = await Promise.all([listArticlesByGroup(id), isViewOnly()]);
+  const columns = viewOnly
+    ? articleColumns.filter((column) => column.id !== "actions")
+    : articleColumns;
 
   return (
     <div className="space-y-4">
       <Breadcrumb items={[{ label: "Articles", href: "/articles" }, { label: articleGroup.name }]} />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Article</h1>
-        <Link
-          href={`/articles/${id}/articles/new`}
-          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4" />
-          Create New
-        </Link>
+        {!viewOnly && (
+          <Link
+            href={`/articles/${id}/articles/new`}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            <Plus className="h-4 w-4" />
+            Create New
+          </Link>
+        )}
       </div>
       <DataTable
-        columns={articleColumns}
+        columns={columns}
         data={articles}
         searchPlaceholder="e.g. filter for article name, etc"
         emptyMessage="No articles yet. Create one to get started."

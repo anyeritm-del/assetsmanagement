@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { floorInputSchema } from "../validation/floor";
 import { createFloor, updateFloor } from "../repositories/floors";
+import { assertCanMutate } from "../viewOnlyGuard";
 
 export interface ActionResult {
   success: boolean;
@@ -20,6 +21,9 @@ function parseFloorForm(formData: FormData) {
 }
 
 export async function createFloorAction(formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseFloorForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -30,6 +34,9 @@ export async function createFloorAction(formData: FormData): Promise<ActionResul
 }
 
 export async function updateFloorAction(id: string, formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseFloorForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };

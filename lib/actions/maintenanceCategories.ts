@@ -6,6 +6,7 @@ import {
   createMaintenanceCategory,
   updateMaintenanceCategory,
 } from "../repositories/maintenanceCategories";
+import { assertCanMutate } from "../viewOnlyGuard";
 
 export interface ActionResult {
   success: boolean;
@@ -19,6 +20,9 @@ function parseMaintenanceCategoryForm(formData: FormData) {
 }
 
 export async function createMaintenanceCategoryAction(formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseMaintenanceCategoryForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -32,6 +36,9 @@ export async function updateMaintenanceCategoryAction(
   id: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseMaintenanceCategoryForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };

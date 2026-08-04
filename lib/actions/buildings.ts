@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { buildingInputSchema } from "../validation/building";
 import { createBuilding, updateBuilding } from "../repositories/buildings";
+import { assertCanMutate } from "../viewOnlyGuard";
 
 export interface ActionResult {
   success: boolean;
@@ -20,6 +21,9 @@ function parseBuildingForm(formData: FormData) {
 }
 
 export async function createBuildingAction(formData: FormData): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseBuildingForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -33,6 +37,9 @@ export async function updateBuildingAction(
   id: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
   const parsed = parseBuildingForm(formData);
   if (!parsed.success) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
