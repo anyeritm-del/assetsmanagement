@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PMSchedulesTable } from "@/components/pmSchedules/PMSchedulesTable";
 import { RunPMCheckButton } from "@/components/pmSchedules/RunPMCheckButton";
+import { canManageMaintenance } from "@/lib/maintenanceAuth";
 import { getPMScheduleDueStatus } from "@/lib/pmScheduleStatus";
 import { listItemsByProperty } from "@/lib/repositories/items";
 import { listPMSchedulesByProperty } from "@/lib/repositories/pmSchedules";
@@ -19,9 +20,10 @@ export default async function PreventiveMaintenancePage() {
     );
   }
 
-  const [schedules, items] = await Promise.all([
+  const [schedules, items, allowed] = await Promise.all([
     listPMSchedulesByProperty(selected.id),
     listItemsByProperty(selected.id),
+    canManageMaintenance(),
   ]);
   const itemsById = new Map(items.map((item) => [item.id, item]));
 
@@ -37,7 +39,18 @@ export default async function PreventiveMaintenancePage() {
           Preventive Maintenance
         </h1>
         <div className="flex items-center gap-3">
-          <RunPMCheckButton propertyId={selected.id} />
+          {allowed ? (
+            <RunPMCheckButton propertyId={selected.id} />
+          ) : (
+            <button
+              type="button"
+              disabled
+              title="You don't have permission to run PM Check. Ask an administrator to grant you &quot;Can Manage Maintenance&quot; in Users."
+              className="inline-flex cursor-not-allowed items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-400 dark:border-slate-700 dark:text-slate-600"
+            >
+              Run PM Check
+            </button>
+          )}
           <Link
             href="/preventive-maintenance/new"
             className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"

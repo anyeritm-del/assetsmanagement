@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
+import { canManageMaintenance } from "../maintenanceAuth";
 import {
   maintenanceRequestAssignmentInputSchema,
   maintenanceRequestInputSchema,
@@ -65,6 +66,10 @@ export async function updateMaintenanceRequestStatusAction(
   id: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  if (!(await canManageMaintenance())) {
+    return { success: false, error: "You don't have permission to update maintenance requests" };
+  }
+
   const parsed = maintenanceRequestStatusInputSchema.safeParse({
     status: formData.get("status"),
   });
@@ -83,6 +88,10 @@ export async function updateMaintenanceRequestAssignmentAction(
   id: string,
   formData: FormData,
 ): Promise<ActionResult> {
+  if (!(await canManageMaintenance())) {
+    return { success: false, error: "You don't have permission to assign maintenance requests" };
+  }
+
   const parsed = maintenanceRequestAssignmentInputSchema.safeParse({
     assigned_to_employee_id: formData.get("assigned_to_employee_id"),
   });

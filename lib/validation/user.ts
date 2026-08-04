@@ -4,6 +4,9 @@ import { USER_LEVELS, USER_STATUSES } from "../constants";
 const nullableUuid = () =>
   z.preprocess((value) => (value === "" ? null : value), z.string().uuid().nullable());
 
+const booleanFromCheckbox = () =>
+  z.preprocess((value) => value === "on" || value === "true" || value === true, z.boolean());
+
 export const userSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
@@ -12,6 +15,7 @@ export const userSchema = z.object({
   status: z.enum(USER_STATUSES),
   password_hash: z.string(),
   assigned_property_id: z.string().uuid().nullable(),
+  can_manage_maintenance: z.boolean(),
   created_at: z.string(),
   updated_at: z.string(),
 });
@@ -23,6 +27,7 @@ export const userInputSchema = z
     level: z.enum(USER_LEVELS).default("user"),
     status: z.enum(USER_STATUSES).default("active"),
     assigned_property_id: nullableUuid().default(null),
+    can_manage_maintenance: booleanFromCheckbox().default(false),
   })
   .refine((data) => data.level !== "property_admin" || data.assigned_property_id !== null, {
     message: "Assigned Property is required for Property admin",

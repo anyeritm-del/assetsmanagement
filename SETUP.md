@@ -110,12 +110,16 @@ steps if uploads start failing with an auth error.
    **Users** (shared across all properties. Directory only for most levels -- creating a User here
    does not grant sign-in access, which is still controlled purely by `ALLOWED_EMAIL_DOMAIN`/
    `ALLOWED_EMAILS`. `password_hash` is a bcrypt hash, never the plaintext password, and isn't used
-   by anything yet. The one level that IS enforced: `assigned_property_id` (references
-   **Properties**) is required when `level` is `property_admin` -- that user's property switcher
-   is locked to only that hotel, checked in `lib/selectedProperty.ts` by matching the signed-in
-   session's email against this sheet. Every other level keeps access to all properties.)
+   by anything yet. Two things ARE enforced, both checked by matching the signed-in session's
+   email against this sheet: (1) `assigned_property_id` (references **Properties**) is required
+   when `level` is `property_admin` -- that user's property switcher is locked to only that hotel
+   (`lib/selectedProperty.ts`); every other level keeps access to all properties. (2)
+   `can_manage_maintenance` gates resolving Maintenance Requests (status/assignment) and running
+   PM Check (`lib/maintenanceAuth.ts`) -- `administrator`/`owner` can always do this regardless of
+   the flag; everyone else needs it checked. Creating Maintenance Requests/PM Schedules stays open
+   to everyone.)
    ```
-   id | name | email | level | status | password_hash | created_at | updated_at | assigned_property_id
+   id | name | email | level | status | password_hash | created_at | updated_at | assigned_property_id | can_manage_maintenance
    ```
 
    **Items** (`room_id`/`department_id`/`equipment_id`/`article_id`/`assigned_employee_id`/

@@ -15,11 +15,16 @@ const HEADERS = [
   "updated_at",
   // Appended at the end so an already-created Users sheet only needs a column added.
   "assigned_property_id",
+  "can_manage_maintenance",
 ];
 
 function toNullableString(value: unknown): string | null {
   if (value === "" || value === null || value === undefined) return null;
   return String(value);
+}
+
+function toBoolean(value: unknown): boolean {
+  return value === true || value === "true" || value === "TRUE" || value === 1 || value === "1";
 }
 
 function fromRow(record: Record<string, unknown>): User | null {
@@ -31,6 +36,7 @@ function fromRow(record: Record<string, unknown>): User | null {
     status: record.status || "active",
     password_hash: String(record.password_hash ?? ""),
     assigned_property_id: toNullableString(record.assigned_property_id),
+    can_manage_maintenance: toBoolean(record.can_manage_maintenance),
     created_at: String(record.created_at ?? ""),
     updated_at: String(record.updated_at ?? ""),
   });

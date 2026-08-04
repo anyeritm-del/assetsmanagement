@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
+import { canManageMaintenance } from "../maintenanceAuth";
 import { pmScheduleInputSchema } from "../validation/pmSchedule";
 import { createPMSchedule, listPMSchedulesByProperty, updatePMSchedule } from "../repositories/pmSchedules";
 import {
@@ -64,6 +65,9 @@ export async function runPMCheckAction(propertyId: string): Promise<RunPMCheckRe
   const session = await auth();
   if (!session?.user) {
     return { success: false, error: "Not signed in" };
+  }
+  if (!(await canManageMaintenance())) {
+    return { success: false, error: "You don't have permission to run PM Check" };
   }
 
   const [schedules, existingRequests] = await Promise.all([

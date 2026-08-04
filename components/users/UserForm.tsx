@@ -133,6 +133,24 @@ export function UserForm({ user, properties, action }: UserFormProps) {
         </div>
       )}
 
+      <label className="flex items-start gap-3">
+        <input
+          type="checkbox"
+          name="can_manage_maintenance"
+          defaultChecked={user?.can_manage_maintenance ?? false}
+          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-400"
+        />
+        <span>
+          <span className="block text-sm font-medium text-slate-700 dark:text-slate-200">
+            Can Manage Maintenance
+          </span>
+          <span className="block text-xs text-slate-400 dark:text-slate-500">
+            Lets this user resolve Maintenance Requests (status/assignment) and run PM Check.
+            Administrator and Owner can always do this regardless of this checkbox.
+          </span>
+        </span>
+      </label>
+
       {state?.error && (
         <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
           {state.error}

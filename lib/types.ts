@@ -137,6 +137,10 @@ export interface User {
   // Required for "property_admin" -- locks that user's property switcher to this one property.
   // Null/unused for every other level (they keep access to all properties).
   assigned_property_id: string | null;
+  // Grants permission to resolve Maintenance Requests (status/assignment) and run PM Check,
+  // independent of level. "administrator"/"owner" always have this permission regardless of
+  // this flag -- see lib/maintenanceAuth.ts.
+  can_manage_maintenance: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -9,6 +9,7 @@ import {
   updateMaintenanceRequestAssignmentAction,
   updateMaintenanceRequestStatusAction,
 } from "@/lib/actions/maintenanceRequests";
+import { canManageMaintenance } from "@/lib/maintenanceAuth";
 import { getBuilding } from "@/lib/repositories/buildings";
 import { getDepartment } from "@/lib/repositories/departments";
 import { listEmployees } from "@/lib/repositories/employees";
@@ -29,15 +30,17 @@ export default async function MaintenanceRequestDetailPage({
     notFound();
   }
 
-  const [department, building, floor, areaType, category, item, employees] = await Promise.all([
-    request.department_id ? getDepartment(request.department_id) : null,
-    getBuilding(request.building_id),
-    request.floor_id ? getFloor(request.floor_id) : null,
-    request.area_type_id ? getMaintenanceAreaType(request.area_type_id) : null,
-    request.category_id ? getMaintenanceCategory(request.category_id) : null,
-    request.item_id ? getItem(request.item_id) : null,
-    listEmployees(),
-  ]);
+  const [department, building, floor, areaType, category, item, employees, allowed] =
+    await Promise.all([
+      request.department_id ? getDepartment(request.department_id) : null,
+      getBuilding(request.building_id),
+      request.floor_id ? getFloor(request.floor_id) : null,
+      request.area_type_id ? getMaintenanceAreaType(request.area_type_id) : null,
+      request.category_id ? getMaintenanceCategory(request.category_id) : null,
+      request.item_id ? getItem(request.item_id) : null,
+      listEmployees(),
+      canManageMaintenance(),
+    ]);
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -120,23 +123,37 @@ export default async function MaintenanceRequestDetailPage({
         <h2 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
           Assignment
         </h2>
-        <AssignmentForm
-          requestId={request.id}
-          employees={employees}
-          currentAssigneeId={request.assigned_to_employee_id}
-          action={updateMaintenanceRequestAssignmentAction}
-        />
+        {allowed ? (
+          <AssignmentForm
+            requestId={request.id}
+            employees={employees}
+            currentAssigneeId={request.assigned_to_employee_id}
+            action={updateMaintenanceRequestAssignmentAction}
+          />
+        ) : (
+          <p className="text-sm text-slate-400 dark:text-slate-500">
+            You don&apos;t have permission to change the assignment. Ask an administrator to grant
+            you &ldquo;Can Manage Maintenance&rdquo; in Users.
+          </p>
+        )}
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
         <h2 className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">
           Update Status
         </h2>
-        <MaintenanceStatusForm
-          requestId={request.id}
-          currentStatus={request.status}
-          action={updateMaintenanceRequestStatusAction}
-        />
+        {allowed ? (
+          <MaintenanceStatusForm
+            requestId={request.id}
+            currentStatus={request.status}
+            action={updateMaintenanceRequestStatusAction}
+          />
+        ) : (
+          <p className="text-sm text-slate-400 dark:text-slate-500">
+            You don&apos;t have permission to update the status. Ask an administrator to grant you
+            &ldquo;Can Manage Maintenance&rdquo; in Users.
+          </p>
+        )}
       </div>
     </div>
   );
