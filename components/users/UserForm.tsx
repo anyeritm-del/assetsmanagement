@@ -107,20 +107,18 @@ export function UserForm({ user, properties, action }: UserFormProps) {
         </div>
       </div>
 
-      {level === "property_admin" && (
+      {level !== "administrator" && level !== "owner" && (
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">
-            Assigned Property
+            Assigned Property {level === "property_admin" && <span className="text-rose-500">*</span>}
           </label>
           <select
             name="assigned_property_id"
-            required
+            required={level === "property_admin"}
             defaultValue={user?.assigned_property_id ?? ""}
             className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-800"
           >
-            <option value="" disabled>
-              Select a hotel
-            </option>
+            <option value="">{level === "property_admin" ? "Select a hotel" : "No restriction (all hotels)"}</option>
             {properties.map((property) => (
               <option key={property.id} value={property.id}>
                 {property.name}
@@ -128,7 +126,9 @@ export function UserForm({ user, properties, action }: UserFormProps) {
             ))}
           </select>
           <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-            Property admin can only access this one hotel -- the property switcher locks to it.
+            {level === "property_admin"
+              ? "Property admin can only access this one hotel -- the property switcher locks to it."
+              : "If set, this user's property switcher locks to only this hotel. Leave blank for access to all hotels."}
           </p>
         </div>
       )}

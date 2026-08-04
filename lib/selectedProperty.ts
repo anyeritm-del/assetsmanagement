@@ -13,12 +13,14 @@ export interface SelectedPropertyContext {
 export async function getSelectedPropertyContext(): Promise<SelectedPropertyContext> {
   const properties = await listActiveProperties();
 
-  // Property admin is locked to their one assigned hotel -- the property switcher only ever
-  // shows/selects that property, regardless of what's in the cookie.
+  // Any level with an assigned_property_id is locked to that one hotel -- the property switcher
+  // only ever shows/selects that property, regardless of what's in the cookie. Administrator and
+  // Owner are always exempt (org-wide roles), even if assigned_property_id was somehow set.
   const session = await auth();
   if (session?.user?.email) {
     const currentUser = await getUserByEmail(session.user.email);
-    if (currentUser?.level === "property_admin" && currentUser.assigned_property_id) {
+    const isExemptLevel = currentUser?.level === "administrator" || currentUser?.level === "owner";
+    if (currentUser && !isExemptLevel && currentUser.assigned_property_id) {
       const assigned = properties.find((property) => property.id === currentUser.assigned_property_id);
       return { properties: assigned ? [assigned] : [], selected: assigned ?? null };
     }
