@@ -44,7 +44,7 @@ export function PropertySwitcher({ properties, selected }: PropertySwitcherProps
             className="fixed inset-0 z-10 cursor-default"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 z-20 mt-2 w-72 rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+          <div className="absolute left-0 z-30 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-lg border border-slate-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
             {properties.length === 0 && (
               <p className="px-3 py-2 text-sm text-slate-400">No active properties found.</p>
             )}
