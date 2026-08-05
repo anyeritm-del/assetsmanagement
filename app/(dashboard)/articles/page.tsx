@@ -1,14 +1,12 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
-import { DataTable } from "@/components/ui/DataTable";
-import { createArticleGroupColumns } from "@/components/articles/ArticleGroupColumns";
+import { ArticleGroupsTable } from "@/components/articles/ArticleGroupsTable";
 import { listArticleGroups } from "@/lib/repositories/articleGroups";
 import { isViewOnly } from "@/lib/viewOnlyGuard";
 
 export default async function ArticleGroupsPage() {
   const [articleGroups, viewOnly] = await Promise.all([listArticleGroups(), isViewOnly()]);
-  const columns = createArticleGroupColumns(viewOnly);
 
   return (
     <div className="space-y-4">
@@ -25,12 +23,7 @@ export default async function ArticleGroupsPage() {
           </Link>
         )}
       </div>
-      <DataTable
-        columns={columns}
-        data={articleGroups}
-        searchPlaceholder="e.g. filter for group name, etc"
-        emptyMessage="No article groups yet. Create one to get started."
-      />
+      <ArticleGroupsTable articleGroups={articleGroups} viewOnly={viewOnly} />
     </div>
   );
 }

@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
-import { DataTable } from "@/components/ui/DataTable";
-import { createBuildingColumns } from "@/components/location/BuildingColumns";
+import { BuildingsTable } from "@/components/location/BuildingsTable";
 import { listBuildingsByProperty } from "@/lib/repositories/buildings";
 import { getSelectedPropertyContext } from "@/lib/selectedProperty";
 import { isViewOnly } from "@/lib/viewOnlyGuard";
@@ -22,7 +21,6 @@ export default async function LocationPage() {
     listBuildingsByProperty(selected.id),
     isViewOnly(),
   ]);
-  const columns = createBuildingColumns(viewOnly);
 
   return (
     <div className="space-y-4">
@@ -39,12 +37,7 @@ export default async function LocationPage() {
           </Link>
         )}
       </div>
-      <DataTable
-        columns={columns}
-        data={buildings}
-        searchPlaceholder="e.g. filter for building name, block, etc"
-        emptyMessage="No buildings yet. Create one to get started."
-      />
+      <BuildingsTable buildings={buildings} viewOnly={viewOnly} />
     </div>
   );
 }

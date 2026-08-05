@@ -2,8 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
-import { DataTable } from "@/components/ui/DataTable";
-import { createFloorColumns } from "@/components/location/FloorColumns";
+import { FloorsTable } from "@/components/location/FloorsTable";
 import { getBuilding } from "@/lib/repositories/buildings";
 import { getProperty } from "@/lib/repositories/properties";
 import { listFloorsByBuilding } from "@/lib/repositories/floors";
@@ -25,7 +24,6 @@ export default async function FloorsPage({
     listFloorsByBuilding(id),
     isViewOnly(),
   ]);
-  const columns = createFloorColumns(viewOnly);
 
   return (
     <div className="space-y-4">
@@ -47,12 +45,7 @@ export default async function FloorsPage({
           </Link>
         )}
       </div>
-      <DataTable
-        columns={columns}
-        data={floors}
-        searchPlaceholder="e.g. filter for floor name, etc"
-        emptyMessage="No floors yet. Create one to get started."
-      />
+      <FloorsTable floors={floors} viewOnly={viewOnly} />
     </div>
   );
 }
