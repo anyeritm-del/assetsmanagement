@@ -22,7 +22,7 @@ export async function buildItemLabelData(itemId: string): Promise<ItemLabelData 
     item.room_id ? getRoom(item.room_id) : Promise.resolve(null),
   ]);
   const floor = room ? await getFloor(room.floor_id) : null;
-  const itemUrl = `${getAppUrl()}/items/${item.id}`;
+  const itemUrl = `${getAppUrl()}/items/${item.id}/view`;
   const qrDataUrl = await QRCode.toDataURL(itemUrl, { margin: 1, width: 300 });
 
   return {
