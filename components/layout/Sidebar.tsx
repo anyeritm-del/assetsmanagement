@@ -100,19 +100,25 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-// Technician is a field-crew role -- it only needs its own jobs and the maintenance workflow,
-// not the rest of the asset-management surface (Items, Suppliers, Users, Reports, etc.).
+// Technician is a field-crew role -- it only needs its own jobs, the maintenance workflow, and a
+// read-only look at Items (enforced separately, see lib/actions/items.ts), not the rest of the
+// asset-management surface (Suppliers, Users, Reports, etc.).
 const TECHNICIAN_TOP_HREFS = new Set(["/", "/my-jobs"]);
-const TECHNICIAN_GROUP_CHILD_HREFS = new Set(["/maintenance-requests", "/preventive-maintenance"]);
+const TECHNICIAN_GROUP_CHILD_HREFS: Record<string, Set<string>> = {
+  Items: new Set(["/items"]),
+  Maintenance: new Set(["/maintenance-requests", "/preventive-maintenance"]),
+};
 
 function scopeNavForTechnician(topNavItems: typeof TOP_NAV_ITEMS, navGroups: NavGroup[]) {
   return {
     topNavItems: topNavItems.filter((item) => TECHNICIAN_TOP_HREFS.has(item.href)),
     navGroups: navGroups
-      .filter((group) => group.label === "Maintenance")
+      .filter((group) => group.label in TECHNICIAN_GROUP_CHILD_HREFS)
       .map((group) => ({
         ...group,
-        children: group.children.filter((child) => TECHNICIAN_GROUP_CHILD_HREFS.has(child.href)),
+        children: group.children.filter((child) =>
+          TECHNICIAN_GROUP_CHILD_HREFS[group.label].has(child.href),
+        ),
       })),
   };
 }

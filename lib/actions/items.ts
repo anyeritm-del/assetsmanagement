@@ -4,10 +4,25 @@ import { revalidatePath } from "next/cache";
 import { itemInputSchema } from "../validation/item";
 import { createItem, updateItem } from "../repositories/items";
 import { assertCanMutate } from "../viewOnlyGuard";
+import { getCurrentUser } from "../currentUser";
 
 export interface ActionResult {
   success: boolean;
   error?: string;
+}
+
+// Technician has view-only access to Items specifically (it can still mutate elsewhere, e.g.
+// resolving Maintenance Requests) -- so this is a separate, narrower check than assertCanMutate().
+// Exported for reuse by other actions that mutate items indirectly (e.g. disposal requests).
+export async function assertCanMutateItem(): Promise<ActionResult | null> {
+  const guard = await assertCanMutate();
+  if (!guard.success) return guard;
+
+  const currentUser = await getCurrentUser();
+  if (currentUser?.level === "technician") {
+    return { success: false, error: "Technicians have view-only access to items" };
+  }
+  return null;
 }
 
 function parseItemForm(formData: FormData) {
@@ -43,8 +58,8 @@ function extractPhoto(formData: FormData): File | null {
 }
 
 export async function createItemAction(formData: FormData): Promise<ActionResult> {
-  const guard = await assertCanMutate();
-  if (!guard.success) return guard;
+  const guard = await assertCanMutateItem();
+  if (guard) return guard;
 
   const parsed = parseItemForm(formData);
   if (!parsed.success) {
@@ -60,8 +75,8 @@ export async function createItemAction(formData: FormData): Promise<ActionResult
 }
 
 export async function updateItemAction(id: string, formData: FormData): Promise<ActionResult> {
-  const guard = await assertCanMutate();
-  if (!guard.success) return guard;
+  const guard = await assertCanMutateItem();
+  if (guard) return guard;
 
   const parsed = parseItemForm(formData);
   if (!parsed.success) {

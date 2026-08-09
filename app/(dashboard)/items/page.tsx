@@ -10,6 +10,7 @@ import { listRoomsByProperty } from "@/lib/repositories/rooms";
 import { listUsers } from "@/lib/repositories/users";
 import { getSelectedPropertyContext } from "@/lib/selectedProperty";
 import { isViewOnly } from "@/lib/viewOnlyGuard";
+import { getCurrentUser } from "@/lib/currentUser";
 
 export default async function ItemsPage() {
   const { selected } = await getSelectedPropertyContext();
@@ -22,7 +23,7 @@ export default async function ItemsPage() {
     );
   }
 
-  const [items, buildings, floors, rooms, articles, users, viewOnly] = await Promise.all([
+  const [items, buildings, floors, rooms, articles, users, viewOnly, currentUser] = await Promise.all([
     listItemsByProperty(selected.id),
     listBuildingsByProperty(selected.id),
     listFloorsByProperty(selected.id),
@@ -30,7 +31,10 @@ export default async function ItemsPage() {
     listArticles(),
     listUsers(),
     isViewOnly(),
+    getCurrentUser(),
   ]);
+  // Technician has view-only access to Items specifically, on top of the general View-only level.
+  const itemsReadOnly = viewOnly || currentUser?.level === "technician";
   const buildingsById = new Map(buildings.map((building) => [building.id, building]));
   const floorsById = new Map(floors.map((floor) => [floor.id, floor]));
   const roomsById = new Map(rooms.map((room) => [room.id, room]));
@@ -41,7 +45,7 @@ export default async function ItemsPage() {
       <Breadcrumb items={[{ label: selected.name }, { label: "Items" }]} />
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Items</h1>
-        {!viewOnly && (
+        {!itemsReadOnly && (
           <Link
             href="/items/new"
             className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
@@ -59,7 +63,7 @@ export default async function ItemsPage() {
         articlesById={articlesById}
         propertyId={selected.id}
         users={users}
-        viewOnly={viewOnly}
+        viewOnly={itemsReadOnly}
       />
     </div>
   );

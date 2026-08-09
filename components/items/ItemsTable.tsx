@@ -36,16 +36,20 @@ export function ItemsTable({
   const [selectedItems, setSelectedItems] = useState<Item[]>([]);
   const [disposalDialogOpen, setDisposalDialogOpen] = useState(false);
 
+  function itemHref(id: string): string {
+    return viewOnly ? `/items/${id}/view` : `/items/${id}`;
+  }
+
   function handleEnterInSearch(value: string, filteredRows: Item[]) {
     // A scanned QR label contains a full "/items/<id>" URL -- jump straight there.
     const urlMatch = value.match(ITEM_URL_PATTERN);
     if (urlMatch) {
-      router.push(`/items/${urlMatch[1]}`);
+      router.push(itemHref(urlMatch[1]));
       return;
     }
     // Otherwise, if the typed/scanned code narrowed the list to exactly one item, open it.
     if (filteredRows.length === 1) {
-      router.push(`/items/${filteredRows[0].id}`);
+      router.push(itemHref(filteredRows[0].id));
     }
   }
 
@@ -54,11 +58,7 @@ export function ItemsTable({
     window.open(`/items/print-labels?ids=${ids}`, "_blank");
   }
 
-  const columns = viewOnly
-    ? createItemColumns(buildingsById, floorsById, roomsById, articlesById).filter(
-        (column) => column.id !== "actions",
-      )
-    : createItemColumns(buildingsById, floorsById, roomsById, articlesById);
+  const columns = createItemColumns(buildingsById, floorsById, roomsById, articlesById, viewOnly);
 
   return (
     <div className="space-y-3">

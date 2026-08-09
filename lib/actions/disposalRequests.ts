@@ -10,6 +10,7 @@ import {
 } from "../repositories/disposalRequests";
 import { listDisposalRequestItems } from "../repositories/disposalRequestItems";
 import { assertCanMutate } from "../viewOnlyGuard";
+import { assertCanMutateItem } from "./items";
 
 export interface ActionResult {
   success: boolean;
@@ -22,8 +23,8 @@ function extractPhoto(formData: FormData): File | null {
 }
 
 export async function createDisposalRequestAction(formData: FormData): Promise<ActionResult> {
-  const guard = await assertCanMutate();
-  if (!guard.success) return guard;
+  const itemGuard = await assertCanMutateItem();
+  if (itemGuard) return itemGuard;
 
   const parsed = disposalRequestInputSchema.safeParse({
     property_id: formData.get("property_id"),
