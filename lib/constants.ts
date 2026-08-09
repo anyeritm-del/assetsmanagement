@@ -35,6 +35,7 @@ export const USER_LEVELS = [
   "property_admin",
   "user_admin",
   "user",
+  "technician",
   "view_only",
   "owner",
 ] as const;
@@ -45,6 +46,7 @@ export const USER_LEVEL_LABELS: Record<UserLevel, string> = {
   property_admin: "Property admin",
   user_admin: "User admin",
   user: "User",
+  technician: "Technician",
   view_only: "View only",
   owner: "Owner",
 };

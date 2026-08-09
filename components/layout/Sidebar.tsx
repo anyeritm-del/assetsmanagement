@@ -21,6 +21,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { useMobileNav } from "./MobileNavContext";
+import type { UserLevel } from "@/lib/constants";
 
 const TOP_NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -99,6 +100,23 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
+// Technician is a field-crew role -- it only needs its own jobs and the maintenance workflow,
+// not the rest of the asset-management surface (Items, Suppliers, Users, Reports, etc.).
+const TECHNICIAN_TOP_HREFS = new Set(["/", "/my-jobs"]);
+const TECHNICIAN_GROUP_CHILD_HREFS = new Set(["/maintenance-requests", "/preventive-maintenance"]);
+
+function scopeNavForTechnician(topNavItems: typeof TOP_NAV_ITEMS, navGroups: NavGroup[]) {
+  return {
+    topNavItems: topNavItems.filter((item) => TECHNICIAN_TOP_HREFS.has(item.href)),
+    navGroups: navGroups
+      .filter((group) => group.label === "Maintenance")
+      .map((group) => ({
+        ...group,
+        children: group.children.filter((child) => TECHNICIAN_GROUP_CHILD_HREFS.has(child.href)),
+      })),
+  };
+}
+
 function matchesHref(pathname: string, href: string): boolean {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 }
@@ -166,12 +184,18 @@ function NavGroupSection({
   );
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  level: UserLevel | null;
+}
+
+export function Sidebar({ level }: SidebarProps) {
   const pathname = usePathname();
   const { open, close } = useMobileNav();
+  const { topNavItems, navGroups } =
+    level === "technician" ? scopeNavForTechnician(TOP_NAV_ITEMS, NAV_GROUPS) : { topNavItems: TOP_NAV_ITEMS, navGroups: NAV_GROUPS };
   const allHrefs = [
-    ...TOP_NAV_ITEMS.map((item) => item.href),
-    ...NAV_GROUPS.flatMap((group) => group.children.map((child) => child.href)),
+    ...topNavItems.map((item) => item.href),
+    ...navGroups.flatMap((group) => group.children.map((child) => child.href)),
   ];
   const activeHref = findActiveHref(pathname, allHrefs);
 
@@ -200,7 +224,7 @@ export function Sidebar() {
         </div>
       </div>
       <nav className="flex-1 space-y-1 px-3">
-        {TOP_NAV_ITEMS.map((item) => {
+        {topNavItems.map((item) => {
           const active = item.href === activeHref;
           const Icon = item.icon;
           return (
@@ -219,7 +243,7 @@ export function Sidebar() {
           );
         })}
 
-        {NAV_GROUPS.map((group) => (
+        {navGroups.map((group) => (
           <NavGroupSection key={group.label} group={group} activeHref={activeHref} />
         ))}
       </nav>
