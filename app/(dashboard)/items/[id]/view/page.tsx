@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { Pencil, Trash2, UserPlus, Move as MoveIcon } from "lucide-react";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { DepreciationChart } from "@/components/items/DepreciationChart";
+import { MaintenanceStatusBadge } from "@/components/maintenanceRequests/MaintenanceStatusBadge";
+import { PriorityBadge } from "@/components/maintenanceRequests/PriorityBadge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { ITEM_TYPE_LABELS } from "@/lib/constants";
 import { formatCurrency } from "@/lib/currency";
@@ -13,10 +15,12 @@ import { getArticle } from "@/lib/repositories/articles";
 import { getArticleGroup } from "@/lib/repositories/articleGroups";
 import { getBuilding } from "@/lib/repositories/buildings";
 import { getDepartment } from "@/lib/repositories/departments";
-import { getEmployee } from "@/lib/repositories/employees";
+import { getEmployee, listEmployees } from "@/lib/repositories/employees";
 import { getEquipment } from "@/lib/repositories/equipment";
 import { getFloor } from "@/lib/repositories/floors";
 import { getItem } from "@/lib/repositories/items";
+import { listMaintenanceCategories } from "@/lib/repositories/maintenanceCategories";
+import { listMaintenanceRequestsByProperty } from "@/lib/repositories/maintenanceRequests";
 import { getProperty } from "@/lib/repositories/properties";
 import { getPurchaseOrder } from "@/lib/repositories/purchaseOrders";
 import { getRoom } from "@/lib/repositories/rooms";
@@ -42,18 +46,41 @@ export default async function ViewItemPage({
     notFound();
   }
 
-  const [property, building, room, department, equipment, article, employee, purchaseOrder, labelData] =
-    await Promise.all([
-      getProperty(item.property_id),
-      getBuilding(item.building_id),
-      item.room_id ? getRoom(item.room_id) : null,
-      item.department_id ? getDepartment(item.department_id) : null,
-      item.equipment_id ? getEquipment(item.equipment_id) : null,
-      item.article_id ? getArticle(item.article_id) : null,
-      item.assigned_employee_id ? getEmployee(item.assigned_employee_id) : null,
-      item.purchase_order_id ? getPurchaseOrder(item.purchase_order_id) : null,
-      buildItemLabelData(item.id),
-    ]);
+  const [
+    property,
+    building,
+    room,
+    department,
+    equipment,
+    article,
+    employee,
+    purchaseOrder,
+    labelData,
+    maintenanceRequests,
+    employees,
+    maintenanceCategories,
+  ] = await Promise.all([
+    getProperty(item.property_id),
+    getBuilding(item.building_id),
+    item.room_id ? getRoom(item.room_id) : null,
+    item.department_id ? getDepartment(item.department_id) : null,
+    item.equipment_id ? getEquipment(item.equipment_id) : null,
+    item.article_id ? getArticle(item.article_id) : null,
+    item.assigned_employee_id ? getEmployee(item.assigned_employee_id) : null,
+    item.purchase_order_id ? getPurchaseOrder(item.purchase_order_id) : null,
+    buildItemLabelData(item.id),
+    listMaintenanceRequestsByProperty(item.property_id),
+    listEmployees(),
+    listMaintenanceCategories(),
+  ]);
+
+  const itemMaintenanceHistory = maintenanceRequests
+    .filter((request) => request.item_id === item.id)
+    .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  const employeesById = new Map(employees.map((emp) => [emp.id, emp]));
+  const maintenanceCategoriesById = new Map(
+    maintenanceCategories.map((category) => [category.id, category]),
+  );
 
   const [floor, articleGroup, supplier] = await Promise.all([
     room ? getFloor(room.floor_id) : null,
@@ -214,6 +241,52 @@ export default async function ViewItemPage({
               <DepreciationChart points={depreciationInfo.points} today={today} />
             </div>
           )}
+
+          <div className="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+            <h2 className="mb-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
+              Maintenance History
+            </h2>
+            {itemMaintenanceHistory.length === 0 ? (
+              <p className="text-sm text-slate-400 dark:text-slate-500">
+                No maintenance requests recorded for this item yet.
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {itemMaintenanceHistory.map((request) => {
+                  const category = request.category_id
+                    ? maintenanceCategoriesById.get(request.category_id)
+                    : null;
+                  const technician = request.assigned_to_employee_id
+                    ? employeesById.get(request.assigned_to_employee_id)
+                    : null;
+                  return (
+                    <li
+                      key={request.id}
+                      className="rounded-lg border border-slate-100 p-3 dark:border-slate-800"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <Link
+                          href={`/maintenance-requests/${request.id}`}
+                          className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+                        >
+                          {request.problem}
+                        </Link>
+                        <div className="flex items-center gap-2">
+                          <PriorityBadge priority={request.priority} />
+                          <MaintenanceStatusBadge status={request.status} />
+                        </div>
+                      </div>
+                      <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                        {formatDate(request.created_at)}
+                        {category ? ` · ${category.name}` : ""}
+                        {technician ? ` · Assigned to ${technician.name}` : ""}
+                      </p>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </div>
 
         {labelData && (
