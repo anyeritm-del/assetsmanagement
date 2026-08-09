@@ -27,6 +27,7 @@ import {
   createMaintenanceRequest,
   updateMaintenanceRequestStatus,
   updateMaintenanceRequestAssignment,
+  backdateMaintenanceRequest,
 } from "../lib/repositories/maintenanceRequests";
 import { listPMSchedulesByProperty, createPMSchedule } from "../lib/repositories/pmSchedules";
 import {
@@ -453,72 +454,95 @@ async function main() {
     console.log("Maintenance area types created");
   }
 
-  // ---- Maintenance Requests ----
-  const existingMaintenanceRequests = await listAllMaintenanceRequests();
-  const demoMaintenanceRequestCount = existingMaintenanceRequests.filter(
+  // ---- Maintenance Requests (idempotent by problem text, so re-running only adds new seeds) ----
+  const existingMaintenanceRequests = (await listAllMaintenanceRequests()).filter(
     (r) => r.property_id === DEMO_PROPERTY_ID,
-  ).length;
+  );
 
-  if (demoMaintenanceRequestCount === 0) {
-    const maintenanceRequestSeeds: {
-      problem: string;
-      description: string;
-      priority: "low" | "medium" | "high" | "critical";
-      status: "open" | "in_progress" | "completed" | "cancelled";
-      categoryIndex: number;
-      areaTypeIndex: number;
-      departmentIndex: number;
-      itemIndex: number;
-      roomIndex: number;
-      roomNumber: string;
-      assignedEmployeeIndex: number | null;
-      requiresShutdown: boolean;
-      requiresExternalVendor: boolean;
-    }[] = [
-      { problem: "AC not cooling in Room 201", description: "Guest reported AC blowing warm air since this morning.", priority: "high", status: "in_progress", categoryIndex: 2, areaTypeIndex: 0, departmentIndex: 0, itemIndex: 2, roomIndex: 8, roomNumber: "201", assignedEmployeeIndex: 2, requiresShutdown: false, requiresExternalVendor: false },
-      { problem: "Smart TV no signal in Room 208", description: "TV shows no signal error, remote pairing also failing.", priority: "medium", status: "open", categoryIndex: 3, areaTypeIndex: 0, departmentIndex: 3, itemIndex: 14, roomIndex: 9, roomNumber: "208", assignedEmployeeIndex: null, requiresShutdown: false, requiresExternalVendor: false },
-      { problem: "Leaking pipe under kitchen sink", description: "Water pooling under the main kitchen prep sink, needs urgent fix.", priority: "critical", status: "open", categoryIndex: 1, areaTypeIndex: 2, departmentIndex: 4, itemIndex: 9, roomIndex: 2, roomNumber: "", assignedEmployeeIndex: 2, requiresShutdown: true, requiresExternalVendor: false },
-      { problem: "Lobby WiFi access point offline", description: "Guests reporting no WiFi near the lobby seating area.", priority: "high", status: "completed", categoryIndex: 3, areaTypeIndex: 1, departmentIndex: 7, itemIndex: 15, roomIndex: 0, roomNumber: "", assignedEmployeeIndex: 1, requiresShutdown: false, requiresExternalVendor: false },
-      { problem: "Wardrobe door hinge broken", description: "Wardrobe door in Room 101 won't close properly, hinge appears bent.", priority: "low", status: "open", categoryIndex: 4, areaTypeIndex: 0, departmentIndex: 3, itemIndex: 7, roomIndex: 3, roomNumber: "101", assignedEmployeeIndex: null, requiresShutdown: false, requiresExternalVendor: false },
-      { problem: "Printer jamming repeatedly", description: "Front office printer jams every few prints, needs vendor service.", priority: "medium", status: "cancelled", categoryIndex: 3, areaTypeIndex: 4, departmentIndex: 3, itemIndex: 17, roomIndex: 1, roomNumber: "", assignedEmployeeIndex: 0, requiresShutdown: false, requiresExternalVendor: true },
-    ];
-
-    for (const seed of maintenanceRequestSeeds) {
-      const item = createdItems[seed.itemIndex];
-      const request = await write(() =>
-        createMaintenanceRequest(
-          {
-            property_id: DEMO_PROPERTY_ID,
-            department_id: pick(departments, seed.departmentIndex).id,
-            requester_name: pick(employees, seed.departmentIndex).name,
-            building_id: item.building_id,
-            floor_id: null,
-            area_type_id: pick(maintenanceAreaTypes, seed.areaTypeIndex).id,
-            room_number: seed.roomNumber,
-            category_id: pick(maintenanceCategories, seed.categoryIndex).id,
-            priority: seed.priority,
-            item_id: item.id,
-            problem: seed.problem,
-            description: seed.description,
-            requires_shutdown: seed.requiresShutdown,
-            requires_external_vendor: seed.requiresExternalVendor,
-          },
-          "demo.requester@astonhotelsinternational.com",
-        ),
-      );
-      if (seed.status !== "open") {
-        await write(() => updateMaintenanceRequestStatus(request.id, seed.status));
-      }
-      if (seed.assignedEmployeeIndex !== null) {
-        await write(() =>
-          updateMaintenanceRequestAssignment(request.id, pick(employees, seed.assignedEmployeeIndex!).id),
-        );
-      }
-    }
-    console.log("Maintenance requests created");
-  } else {
-    console.log("Maintenance requests already exist, skipping");
+  interface MaintenanceRequestSeed {
+    problem: string;
+    description: string;
+    priority: "low" | "medium" | "high" | "critical";
+    status: "open" | "in_progress" | "completed" | "cancelled";
+    categoryIndex: number;
+    areaTypeIndex: number;
+    departmentIndex: number;
+    itemIndex: number;
+    roomNumber: string;
+    assignedEmployeeIndex: number | null;
+    requiresShutdown: boolean;
+    requiresExternalVendor: boolean;
+    // Backdates created_at/updated_at after creation (which always stamps "now") so demo history
+    // reads as having happened over time instead of everything filed today.
+    daysAgo: number;
   }
+
+  const maintenanceRequestSeeds: MaintenanceRequestSeed[] = [
+    { problem: "AC not cooling in Room 201", description: "Guest reported AC blowing warm air since this morning.", priority: "high", status: "in_progress", categoryIndex: 2, areaTypeIndex: 0, departmentIndex: 0, itemIndex: 2, roomNumber: "201", assignedEmployeeIndex: 2, requiresShutdown: false, requiresExternalVendor: false, daysAgo: 2 },
+    { problem: "Smart TV no signal in Room 208", description: "TV shows no signal error, remote pairing also failing.", priority: "medium", status: "open", categoryIndex: 3, areaTypeIndex: 0, departmentIndex: 3, itemIndex: 14, roomNumber: "208", assignedEmployeeIndex: null, requiresShutdown: false, requiresExternalVendor: false, daysAgo: 1 },
+    { problem: "Leaking pipe under kitchen sink", description: "Water pooling under the main kitchen prep sink, needs urgent fix.", priority: "critical", status: "open", categoryIndex: 1, areaTypeIndex: 2, departmentIndex: 4, itemIndex: 9, roomNumber: "", assignedEmployeeIndex: 2, requiresShutdown: true, requiresExternalVendor: false, daysAgo: 0 },
+    { problem: "Lobby WiFi access point offline", description: "Guests reporting no WiFi near the lobby seating area.", priority: "high", status: "completed", categoryIndex: 3, areaTypeIndex: 1, departmentIndex: 7, itemIndex: 15, roomNumber: "", assignedEmployeeIndex: 1, requiresShutdown: false, requiresExternalVendor: false, daysAgo: 20 },
+    { problem: "Wardrobe door hinge broken", description: "Wardrobe door in Room 101 won't close properly, hinge appears bent.", priority: "low", status: "open", categoryIndex: 4, areaTypeIndex: 0, departmentIndex: 3, itemIndex: 7, roomNumber: "101", assignedEmployeeIndex: null, requiresShutdown: false, requiresExternalVendor: false, daysAgo: 5 },
+    { problem: "Printer jamming repeatedly", description: "Front office printer jams every few prints, needs vendor service.", priority: "medium", status: "cancelled", categoryIndex: 3, areaTypeIndex: 4, departmentIndex: 3, itemIndex: 17, roomNumber: "", assignedEmployeeIndex: 0, requiresShutdown: false, requiresExternalVendor: true, daysAgo: 15 },
+    // -- Additional history, mostly resolved tickets from a few months back so items like the
+    // Split AC in Room 101 show a real maintenance timeline instead of "no history yet".
+    { problem: "AC filter clogged, weak airflow in Room 101", description: "Routine inspection found the filter caked with dust, restricting airflow.", priority: "medium", status: "completed", categoryIndex: 2, areaTypeIndex: 0, departmentIndex: 0, itemIndex: 0, roomNumber: "101", assignedEmployeeIndex: 2, requiresShutdown: false, requiresExternalVendor: false, daysAgo: 150 },
+    { problem: "AC making rattling noise in Room 101", description: "Guest reported a rattling sound from the AC unit at night.", priority: "low", status: "completed", categoryIndex: 2, areaTypeIndex: 0, departmentIndex: 0, itemIndex: 0, roomNumber: "101", assignedEmployeeIndex: 2, requiresShutdown: false, requiresExternalVendor: false, daysAgo: 60 },
+    { problem: "AC not cooling efficiently in Room 101, needs recheck", description: "Guest says room takes longer than usual to cool down.", priority: "medium", status: "open", categoryIndex: 2, areaTypeIndex: 0, departmentIndex: 0, itemIndex: 0, roomNumber: "101", assignedEmployeeIndex: null, requiresShutdown: false, requiresExternalVendor: false, daysAgo: 4 },
+    { problem: "Kitchen fridge compressor running loud", description: "Kitchen staff reported the compressor is noticeably louder than normal.", priority: "medium", status: "completed", categoryIndex: 0, areaTypeIndex: 2, departmentIndex: 4, itemIndex: 9, roomNumber: "", assignedEmployeeIndex: 2, requiresShutdown: false, requiresExternalVendor: false, daysAgo: 90 },
+    { problem: "Lobby WiFi AP dropping connection intermittently", description: "Front desk reports the lobby access point drops guests every 10-15 minutes.", priority: "medium", status: "open", categoryIndex: 3, areaTypeIndex: 1, departmentIndex: 7, itemIndex: 15, roomNumber: "", assignedEmployeeIndex: 1, requiresShutdown: false, requiresExternalVendor: false, daysAgo: 9 },
+    { problem: "Room 208 TV remote not pairing", description: "Remote wouldn't pair with the TV; resolved by re-syncing and replacing batteries.", priority: "low", status: "completed", categoryIndex: 3, areaTypeIndex: 0, departmentIndex: 3, itemIndex: 14, roomNumber: "208", assignedEmployeeIndex: null, requiresShutdown: false, requiresExternalVendor: false, daysAgo: 120 },
+    { problem: "Front office PC running very slow", description: "Desktop PC at the front office counter was lagging badly; cleaned up startup programs and temp files.", priority: "low", status: "completed", categoryIndex: 3, areaTypeIndex: 1, departmentIndex: 3, itemIndex: 5, roomNumber: "", assignedEmployeeIndex: 0, requiresShutdown: false, requiresExternalVendor: false, daysAgo: 65 },
+    { problem: "Wardrobe shelf sagging in Room 201", description: "Guest noticed the wardrobe's top shelf sagging under light weight.", priority: "low", status: "open", categoryIndex: 4, areaTypeIndex: 0, departmentIndex: 3, itemIndex: 8, roomNumber: "201", assignedEmployeeIndex: null, requiresShutdown: false, requiresExternalVendor: false, daysAgo: 3 },
+  ];
+
+  let newMaintenanceRequestCount = 0;
+  for (const seed of maintenanceRequestSeeds) {
+    if (existingMaintenanceRequests.some((r) => r.problem === seed.problem)) {
+      continue;
+    }
+
+    const item = createdItems[seed.itemIndex];
+    const request = await write(() =>
+      createMaintenanceRequest(
+        {
+          property_id: DEMO_PROPERTY_ID,
+          department_id: pick(departments, seed.departmentIndex).id,
+          requester_name: pick(employees, seed.departmentIndex).name,
+          building_id: item.building_id,
+          floor_id: null,
+          area_type_id: pick(maintenanceAreaTypes, seed.areaTypeIndex).id,
+          room_number: seed.roomNumber,
+          category_id: pick(maintenanceCategories, seed.categoryIndex).id,
+          priority: seed.priority,
+          item_id: item.id,
+          problem: seed.problem,
+          description: seed.description,
+          requires_shutdown: seed.requiresShutdown,
+          requires_external_vendor: seed.requiresExternalVendor,
+        },
+        "demo.requester@astonhotelsinternational.com",
+      ),
+    );
+    const backdatedAt = daysFromNow(-seed.daysAgo);
+    await write(() =>
+      backdateMaintenanceRequest(request.id, { created_at: backdatedAt, updated_at: backdatedAt }),
+    );
+    if (seed.status !== "open") {
+      await write(() => updateMaintenanceRequestStatus(request.id, seed.status));
+    }
+    if (seed.assignedEmployeeIndex !== null) {
+      await write(() =>
+        updateMaintenanceRequestAssignment(request.id, pick(employees, seed.assignedEmployeeIndex!).id),
+      );
+    }
+    newMaintenanceRequestCount++;
+  }
+  console.log(
+    `Maintenance requests: ${newMaintenanceRequestCount} created, ${
+      maintenanceRequestSeeds.length - newMaintenanceRequestCount
+    } already existed`,
+  );
 
   // ---- PM Schedules ----
   const existingPMSchedules = await listPMSchedulesByProperty(DEMO_PROPERTY_ID);

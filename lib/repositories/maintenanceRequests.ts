@@ -198,3 +198,12 @@ export async function updateMaintenanceRequestAssignment(
     updated_at: new Date().toISOString(),
   });
 }
+
+// createMaintenanceRequest always stamps created_at/updated_at as "now" -- this lets seed scripts
+// backdate a request afterward so demo history doesn't look like everything happened today.
+export async function backdateMaintenanceRequest(
+  id: string,
+  patch: Partial<Pick<MaintenanceRequest, "status" | "created_at" | "updated_at">>,
+): Promise<MaintenanceRequest> {
+  return repository.update(id, patch);
+}
