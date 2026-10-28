@@ -7,7 +7,13 @@ import { USER_LEVEL_LABELS } from "@/lib/constants";
 import type { User } from "@/lib/types";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 
-export const userColumns: ColumnDef<User>[] = [
+/**
+ * A user as the list page sends it to the browser: no password hash, plus the assigned hotel's
+ * name resolved on the server ("All hotels" when the user isn't locked to one).
+ */
+export type UserRow = Omit<User, "password_hash"> & { assigned_property_name: string };
+
+export const userColumns: ColumnDef<UserRow>[] = [
   {
     accessorKey: "name",
     header: "Name",
@@ -21,6 +27,10 @@ export const userColumns: ColumnDef<User>[] = [
     accessorKey: "level",
     header: "Level",
     cell: ({ row }) => USER_LEVEL_LABELS[row.original.level],
+  },
+  {
+    accessorKey: "assigned_property_name",
+    header: "Assigned Property",
   },
   {
     accessorKey: "status",
