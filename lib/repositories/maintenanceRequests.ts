@@ -1,90 +1,12 @@
 import { v4 as uuidv4 } from "uuid";
-import { createSheetRepository } from "./sheetRepository";
+import { eq } from "drizzle-orm";
+import { createTableRepository } from "./tableRepository";
+import { maintenanceRequests } from "../db/schema";
 import type { MaintenanceRequest } from "../types";
-import { maintenanceRequestSchema } from "../validation/maintenanceRequest";
 import type { MaintenanceRequestInput } from "../validation/maintenanceRequest";
 import { uploadPhoto } from "../google/uploadPhoto";
 
-const HEADERS = [
-  "id",
-  "property_id",
-  "department_id",
-  "requester_name",
-  "requester_email",
-  "building_id",
-  "floor_id",
-  "area_type_id",
-  "room_number",
-  "category_id",
-  "priority",
-  "item_id",
-  "problem",
-  "description",
-  "requires_shutdown",
-  "requires_external_vendor",
-  "status",
-  "photo_drive_file_id",
-  "photo_view_link",
-  "created_at",
-  "updated_at",
-  // Appended at the end (rather than inserted near department_id/category_id/area_type_id above)
-  // so an already-created MaintenanceRequests sheet only needs a column added, not reordered.
-  "pm_schedule_id",
-  "assigned_to_employee_id",
-];
-
-function toNullableString(value: unknown): string | null {
-  if (value === "" || value === null || value === undefined) return null;
-  return String(value);
-}
-
-function toBoolean(value: unknown): boolean {
-  return value === true || value === "true" || value === "TRUE" || value === 1 || value === "1";
-}
-
-function fromRow(record: Record<string, unknown>): MaintenanceRequest | null {
-  const parsed = maintenanceRequestSchema.safeParse({
-    id: String(record.id ?? ""),
-    property_id: String(record.property_id ?? ""),
-    department_id: toNullableString(record.department_id),
-    requester_name: String(record.requester_name ?? ""),
-    requester_email: String(record.requester_email ?? ""),
-    building_id: String(record.building_id ?? ""),
-    floor_id: toNullableString(record.floor_id),
-    area_type_id: toNullableString(record.area_type_id),
-    room_number: String(record.room_number ?? ""),
-    category_id: toNullableString(record.category_id),
-    priority: record.priority || "medium",
-    item_id: toNullableString(record.item_id),
-    problem: String(record.problem ?? ""),
-    description: String(record.description ?? ""),
-    requires_shutdown: toBoolean(record.requires_shutdown),
-    requires_external_vendor: toBoolean(record.requires_external_vendor),
-    status: record.status || "open",
-    photo_drive_file_id: toNullableString(record.photo_drive_file_id),
-    photo_view_link: toNullableString(record.photo_view_link),
-    pm_schedule_id: toNullableString(record.pm_schedule_id),
-    assigned_to_employee_id: toNullableString(record.assigned_to_employee_id),
-    created_at: String(record.created_at ?? ""),
-    updated_at: String(record.updated_at ?? ""),
-  });
-  if (!parsed.success) {
-    console.warn("Skipping malformed MaintenanceRequests row:", parsed.error.flatten());
-    return null;
-  }
-  return parsed.data;
-}
-
-function toRow(entity: MaintenanceRequest): Record<string, unknown> {
-  return { ...entity };
-}
-
-const repository = createSheetRepository<MaintenanceRequest>({
-  sheetName: "MaintenanceRequests",
-  headers: HEADERS,
-  fromRow,
-  toRow,
-});
+const repository = createTableRepository(maintenanceRequests, "MaintenanceRequests");
 
 export async function listAllMaintenanceRequests(): Promise<MaintenanceRequest[]> {
   return repository.list();
@@ -93,8 +15,7 @@ export async function listAllMaintenanceRequests(): Promise<MaintenanceRequest[]
 export async function listMaintenanceRequestsByProperty(
   propertyId: string,
 ): Promise<MaintenanceRequest[]> {
-  const all = await repository.list();
-  return all.filter((request) => request.property_id === propertyId);
+  return repository.list(eq(maintenanceRequests.property_id, propertyId));
 }
 
 export async function getMaintenanceRequest(id: string): Promise<MaintenanceRequest | null> {

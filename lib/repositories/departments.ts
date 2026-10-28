@@ -1,36 +1,10 @@
 import { v4 as uuidv4 } from "uuid";
-import { createSheetRepository } from "./sheetRepository";
+import { createTableRepository } from "./tableRepository";
+import { departments } from "../db/schema";
 import type { Department } from "../types";
-import { departmentSchema } from "../validation/department";
 import type { DepartmentInput } from "../validation/department";
 
-const HEADERS = ["id", "code", "name", "created_at", "updated_at"];
-
-function fromRow(record: Record<string, unknown>): Department | null {
-  const parsed = departmentSchema.safeParse({
-    id: String(record.id ?? ""),
-    code: String(record.code ?? ""),
-    name: String(record.name ?? ""),
-    created_at: String(record.created_at ?? ""),
-    updated_at: String(record.updated_at ?? ""),
-  });
-  if (!parsed.success) {
-    console.warn("Skipping malformed Departments row:", parsed.error.flatten());
-    return null;
-  }
-  return parsed.data;
-}
-
-function toRow(entity: Department): Record<string, unknown> {
-  return { ...entity };
-}
-
-const repository = createSheetRepository<Department>({
-  sheetName: "Departments",
-  headers: HEADERS,
-  fromRow,
-  toRow,
-});
+const repository = createTableRepository(departments, "Departments");
 
 export async function listDepartments(): Promise<Department[]> {
   return repository.list();

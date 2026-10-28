@@ -1,45 +1,18 @@
 import { v4 as uuidv4 } from "uuid";
-import { createSheetRepository } from "./sheetRepository";
+import { eq } from "drizzle-orm";
+import { createTableRepository } from "./tableRepository";
+import { properties } from "../db/schema";
 import type { Property } from "../types";
-import { propertySchema } from "../validation/property";
 import type { PropertyInput } from "../validation/property";
 
-const HEADERS = ["id", "name", "code", "status", "created_at", "updated_at"];
-
-function fromRow(record: Record<string, unknown>): Property | null {
-  const parsed = propertySchema.safeParse({
-    id: String(record.id ?? ""),
-    name: String(record.name ?? ""),
-    code: String(record.code ?? ""),
-    status: record.status || "active",
-    created_at: String(record.created_at ?? ""),
-    updated_at: String(record.updated_at ?? ""),
-  });
-  if (!parsed.success) {
-    console.warn("Skipping malformed Properties row:", parsed.error.flatten());
-    return null;
-  }
-  return parsed.data;
-}
-
-function toRow(entity: Property): Record<string, unknown> {
-  return { ...entity };
-}
-
-const repository = createSheetRepository<Property>({
-  sheetName: "Properties",
-  headers: HEADERS,
-  fromRow,
-  toRow,
-});
+const repository = createTableRepository(properties, "Properties");
 
 export async function listProperties(): Promise<Property[]> {
   return repository.list();
 }
 
 export async function listActiveProperties(): Promise<Property[]> {
-  const all = await repository.list();
-  return all.filter((property) => property.status === "active");
+  return repository.list(eq(properties.status, "active"));
 }
 
 export async function getProperty(id: string): Promise<Property | null> {

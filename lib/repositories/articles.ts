@@ -1,56 +1,18 @@
 import { v4 as uuidv4 } from "uuid";
-import { createSheetRepository } from "./sheetRepository";
+import { eq } from "drizzle-orm";
+import { createTableRepository } from "./tableRepository";
+import { articles } from "../db/schema";
 import type { Article } from "../types";
-import { articleSchema } from "../validation/article";
 import type { ArticleInput } from "../validation/article";
 
-const HEADERS = [
-  "id",
-  "article_group_id",
-  "name",
-  "code",
-  "unit",
-  "content",
-  "created_at",
-  "updated_at",
-];
-
-function fromRow(record: Record<string, unknown>): Article | null {
-  const parsed = articleSchema.safeParse({
-    id: String(record.id ?? ""),
-    article_group_id: String(record.article_group_id ?? ""),
-    name: String(record.name ?? ""),
-    code: String(record.code ?? ""),
-    unit: String(record.unit ?? ""),
-    content: Number(record.content ?? 0),
-    created_at: String(record.created_at ?? ""),
-    updated_at: String(record.updated_at ?? ""),
-  });
-  if (!parsed.success) {
-    console.warn("Skipping malformed Articles row:", parsed.error.flatten());
-    return null;
-  }
-  return parsed.data;
-}
-
-function toRow(entity: Article): Record<string, unknown> {
-  return { ...entity };
-}
-
-const repository = createSheetRepository<Article>({
-  sheetName: "Articles",
-  headers: HEADERS,
-  fromRow,
-  toRow,
-});
+const repository = createTableRepository(articles, "Articles");
 
 export async function listArticles(): Promise<Article[]> {
   return repository.list();
 }
 
 export async function listArticlesByGroup(articleGroupId: string): Promise<Article[]> {
-  const all = await repository.list();
-  return all.filter((article) => article.article_group_id === articleGroupId);
+  return repository.list(eq(articles.article_group_id, articleGroupId));
 }
 
 export async function getArticle(id: string): Promise<Article | null> {

@@ -1,8 +1,9 @@
 /* One-off seed script for the "Demo hotel" property. Run with:
  *   node --env-file=.env.local ./node_modules/.bin/tsx scripts/seed-demo-hotel.ts
  * Idempotent for location/master data (matches by name before creating), so it's safe to re-run
- * after a partial failure (e.g. hitting the Sheets API per-minute write quota).
+ * after a partial failure.
  */
+import { closeDb } from "../lib/db/client";
 import { createBuilding, listBuildingsByProperty } from "../lib/repositories/buildings";
 import { createFloor, listFloorsByProperty } from "../lib/repositories/floors";
 import { createRoom, listRoomsByProperty } from "../lib/repositories/rooms";
@@ -51,15 +52,10 @@ import type { Article, Building, Floor, Item, PurchaseOrder, Room } from "../lib
 const DEMO_PROPERTY_ID = "4a974743-7683-481e-a61c-167ffb903bdf"; // Demo hotel
 const CILEGON_PROPERTY_ID = "544ac456-9a58-4c42-a352-f67d31837e83"; // ASTON Cilegon Boutique Hotel
 
-// Stay comfortably under the Sheets API's per-minute write quota.
-const RATE_LIMIT_MS = 1200;
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+// Every write goes through here: originally to throttle Google Sheets quota, now just a single
+// place to hook logging/throttling into if it's ever needed again.
 async function write<T>(fn: () => Promise<T>): Promise<T> {
-  const result = await fn();
-  await sleep(RATE_LIMIT_MS);
-  return result;
+  return fn();
 }
 
 function daysFromNow(days: number): string {
@@ -738,7 +734,9 @@ async function main() {
   console.log("\nSeeding complete.");
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
+  })
+  .finally(() => closeDb());

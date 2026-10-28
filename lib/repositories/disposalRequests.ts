@@ -1,68 +1,15 @@
 import { v4 as uuidv4 } from "uuid";
-import { createSheetRepository } from "./sheetRepository";
+import { eq } from "drizzle-orm";
+import { createTableRepository } from "./tableRepository";
+import { disposalRequests } from "../db/schema";
+import { getDb } from "../db/client";
 import type { DisposalRequest } from "../types";
-import { disposalRequestSchema } from "../validation/disposalRequest";
 import type { DisposalRequestInput } from "../validation/disposalRequest";
 import { createDisposalRequestItem } from "./disposalRequestItems";
-import { updateItem } from "./items";
+import { updateItems } from "./items";
 import { uploadPhoto } from "../google/uploadPhoto";
 
-const HEADERS = [
-  "id",
-  "property_id",
-  "reason",
-  "note",
-  "photo_drive_file_id",
-  "photo_view_link",
-  "approver_user_id",
-  "requester_name",
-  "requester_email",
-  "status",
-  "decided_by",
-  "decided_at",
-  "created_at",
-  "updated_at",
-];
-
-function toNullableString(value: unknown): string | null {
-  if (value === "" || value === null || value === undefined) return null;
-  return String(value);
-}
-
-function fromRow(record: Record<string, unknown>): DisposalRequest | null {
-  const parsed = disposalRequestSchema.safeParse({
-    id: String(record.id ?? ""),
-    property_id: String(record.property_id ?? ""),
-    reason: record.reason || "broken",
-    note: String(record.note ?? ""),
-    photo_drive_file_id: toNullableString(record.photo_drive_file_id),
-    photo_view_link: toNullableString(record.photo_view_link),
-    approver_user_id: String(record.approver_user_id ?? ""),
-    requester_name: String(record.requester_name ?? ""),
-    requester_email: String(record.requester_email ?? ""),
-    status: record.status || "pending",
-    decided_by: toNullableString(record.decided_by),
-    decided_at: toNullableString(record.decided_at),
-    created_at: String(record.created_at ?? ""),
-    updated_at: String(record.updated_at ?? ""),
-  });
-  if (!parsed.success) {
-    console.warn("Skipping malformed DisposalRequests row:", parsed.error.flatten());
-    return null;
-  }
-  return parsed.data;
-}
-
-function toRow(entity: DisposalRequest): Record<string, unknown> {
-  return { ...entity };
-}
-
-const repository = createSheetRepository<DisposalRequest>({
-  sheetName: "DisposalRequests",
-  headers: HEADERS,
-  fromRow,
-  toRow,
-});
+const repository = createTableRepository(disposalRequests, "DisposalRequests");
 
 export async function listAllDisposalRequests(): Promise<DisposalRequest[]> {
   return repository.list();
@@ -71,8 +18,7 @@ export async function listAllDisposalRequests(): Promise<DisposalRequest[]> {
 export async function listDisposalRequestsByProperty(
   propertyId: string,
 ): Promise<DisposalRequest[]> {
-  const all = await repository.list();
-  return all.filter((request) => request.property_id === propertyId);
+  return repository.list(eq(disposalRequests.property_id, propertyId));
 }
 
 export async function getDisposalRequest(id: string): Promise<DisposalRequest | null> {
@@ -110,9 +56,14 @@ export async function createDisposalRequestWithItems(
     created_at: now,
     updated_at: now,
   };
-  const created = await repository.create(entity);
-  await Promise.all(item_ids.map((itemId) => createDisposalRequestItem(created.id, itemId)));
-  return created;
+  // One transaction so a failure never leaves a request without its item lines.
+  return getDb().transaction(async (tx) => {
+    const created = await repository.create(entity, tx);
+    for (const itemId of item_ids) {
+      await createDisposalRequestItem(created.id, itemId, tx);
+    }
+    return created;
+  });
 }
 
 export async function decideDisposalRequest(
@@ -122,16 +73,16 @@ export async function decideDisposalRequest(
   itemIds: string[],
 ): Promise<DisposalRequest> {
   const now = new Date().toISOString();
-  const updated = await repository.update(id, {
-    status: decision,
-    decided_by: decidedBy,
-    decided_at: now,
-    updated_at: now,
+  // One transaction so an approval never lands without its items being marked disposed.
+  return getDb().transaction(async (tx) => {
+    const updated = await repository.update(
+      id,
+      { status: decision, decided_by: decidedBy, decided_at: now, updated_at: now },
+      tx,
+    );
+    if (decision === "approved") {
+      await updateItems(itemIds, { status: "disposed" }, tx);
+    }
+    return updated;
   });
-
-  if (decision === "approved") {
-    await Promise.all(itemIds.map((itemId) => updateItem(itemId, { status: "disposed" })));
-  }
-
-  return updated;
 }

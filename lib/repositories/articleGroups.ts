@@ -1,35 +1,10 @@
 import { v4 as uuidv4 } from "uuid";
-import { createSheetRepository } from "./sheetRepository";
+import { createTableRepository } from "./tableRepository";
+import { articleGroups } from "../db/schema";
 import type { ArticleGroup } from "../types";
-import { articleGroupSchema } from "../validation/articleGroup";
 import type { ArticleGroupInput } from "../validation/articleGroup";
 
-const HEADERS = ["id", "name", "created_at", "updated_at"];
-
-function fromRow(record: Record<string, unknown>): ArticleGroup | null {
-  const parsed = articleGroupSchema.safeParse({
-    id: String(record.id ?? ""),
-    name: String(record.name ?? ""),
-    created_at: String(record.created_at ?? ""),
-    updated_at: String(record.updated_at ?? ""),
-  });
-  if (!parsed.success) {
-    console.warn("Skipping malformed Article Groups row:", parsed.error.flatten());
-    return null;
-  }
-  return parsed.data;
-}
-
-function toRow(entity: ArticleGroup): Record<string, unknown> {
-  return { ...entity };
-}
-
-const repository = createSheetRepository<ArticleGroup>({
-  sheetName: "ArticleGroups",
-  headers: HEADERS,
-  fromRow,
-  toRow,
-});
+const repository = createTableRepository(articleGroups, "ArticleGroups");
 
 export async function listArticleGroups(): Promise<ArticleGroup[]> {
   return repository.list();

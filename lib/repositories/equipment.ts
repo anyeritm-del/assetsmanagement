@@ -1,37 +1,10 @@
 import { v4 as uuidv4 } from "uuid";
-import { createSheetRepository } from "./sheetRepository";
+import { createTableRepository } from "./tableRepository";
+import { equipment } from "../db/schema";
 import type { Equipment } from "../types";
-import { equipmentSchema } from "../validation/equipment";
 import type { EquipmentInput } from "../validation/equipment";
 
-const HEADERS = ["id", "code", "name", "description", "created_at", "updated_at"];
-
-function fromRow(record: Record<string, unknown>): Equipment | null {
-  const parsed = equipmentSchema.safeParse({
-    id: String(record.id ?? ""),
-    code: String(record.code ?? ""),
-    name: String(record.name ?? ""),
-    description: String(record.description ?? ""),
-    created_at: String(record.created_at ?? ""),
-    updated_at: String(record.updated_at ?? ""),
-  });
-  if (!parsed.success) {
-    console.warn("Skipping malformed Equipment row:", parsed.error.flatten());
-    return null;
-  }
-  return parsed.data;
-}
-
-function toRow(entity: Equipment): Record<string, unknown> {
-  return { ...entity };
-}
-
-const repository = createSheetRepository<Equipment>({
-  sheetName: "Equipment",
-  headers: HEADERS,
-  fromRow,
-  toRow,
-});
+const repository = createTableRepository(equipment, "Equipment");
 
 export async function listEquipment(): Promise<Equipment[]> {
   return repository.list();

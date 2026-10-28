@@ -1,4 +1,5 @@
 import { listProperties } from "../lib/repositories/properties";
+import { closeDb } from "../lib/db/client";
 import { listBuildings } from "../lib/repositories/buildings";
 import { listFloors } from "../lib/repositories/floors";
 import { listRooms } from "../lib/repositories/rooms";
@@ -83,7 +84,9 @@ async function main() {
   console.log("OutgoingRecords count:", outgoingRecords.length);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
+  })
+  .finally(() => closeDb());
