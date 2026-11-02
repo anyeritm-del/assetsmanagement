@@ -3,9 +3,8 @@ import { ImportItemsForm } from "@/components/items/ImportItemsForm";
 import { getSelectedPropertyContext } from "@/lib/selectedProperty";
 import { isViewOnly } from "@/lib/viewOnlyGuard";
 
-// Server Actions invoked from this page (importItemsBatchAction) can run up to this long --
-// a ~15-row batch at the ~1.2s per-write rate limit takes ~18s, above the platform's 10-15s
-// serverless defaults but comfortably under this ceiling.
+// Server Actions invoked from this page (importItemsBatchAction) can run up to this long -- a
+// 100-row batch is one insert per row, normally a few seconds; this leaves headroom.
 export const maxDuration = 60;
 
 export default async function ImportPage() {

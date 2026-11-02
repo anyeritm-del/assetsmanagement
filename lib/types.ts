@@ -167,6 +167,7 @@ export interface Item {
   lifetime_years: number | null;
   end_of_lifetime_date: string | null;
   warranty_months: number | null;
+  received_date: string | null;
   status: ItemStatus;
   notes: string;
   photo_drive_file_id: string | null;

@@ -54,6 +54,13 @@ export function getDb(): Database {
   return globalForDb.db;
 }
 
+/** The underlying pg pool, for raw SQL in scripts (e.g. scripts/migrate.ts). */
+export function getPool(): Pool {
+  getDb();
+  if (!globalForDb.pool) throw new Error("Database pool was not initialised");
+  return globalForDb.pool;
+}
+
 /** Closes the pool -- only for one-off scripts, so the Node process can exit. */
 export async function closeDb(): Promise<void> {
   await globalForDb.pool?.end();

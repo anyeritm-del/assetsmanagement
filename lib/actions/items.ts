@@ -47,6 +47,7 @@ function parseItemForm(formData: FormData) {
     lifetime_years: formData.get("lifetime_years") || null,
     end_of_lifetime_date: formData.get("end_of_lifetime_date") || null,
     warranty_months: formData.get("warranty_months") || null,
+    received_date: formData.get("received_date") || null,
     status: formData.get("status"),
     notes: formData.get("notes"),
   });

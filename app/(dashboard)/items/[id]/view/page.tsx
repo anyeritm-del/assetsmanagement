@@ -10,7 +10,7 @@ import { ITEM_TYPE_LABELS } from "@/lib/constants";
 import { formatCurrency } from "@/lib/currency";
 import { buildDepreciationInfo } from "@/lib/depreciation";
 import { buildItemLabelData } from "@/lib/itemLabel";
-import { getWarrantyExpiryDate } from "@/lib/reportHelpers";
+import { getItemReceivedDate, getWarrantyExpiryDate } from "@/lib/reportHelpers";
 import { getArticle } from "@/lib/repositories/articles";
 import { getArticleGroup } from "@/lib/repositories/articleGroups";
 import { getBuilding } from "@/lib/repositories/buildings";
@@ -94,7 +94,9 @@ export default async function ViewItemPage({
   const warrantyExpiry =
     item.warranty_months !== null ? getWarrantyExpiryDate(item, purchaseOrdersById) : null;
 
-  const depreciationStartDate = purchaseOrder?.received_date || item.created_at;
+  // Shown as-is (no created_at fallback): only an explicit date counts as "received".
+  const receivedDate = item.received_date || purchaseOrder?.received_date || null;
+  const depreciationStartDate = getItemReceivedDate(item, purchaseOrder);
   const depreciationInfo = item.end_of_lifetime_date
     ? buildDepreciationInfo(depreciationStartDate, item.end_of_lifetime_date, item.acquisition_value)
     : null;
@@ -208,7 +210,7 @@ export default async function ViewItemPage({
                   </div>
                   <div className="text-slate-600 dark:text-slate-300">Brand: {item.brand || "—"}</div>
                   <div className="text-slate-600 dark:text-slate-300">
-                    Received Date: {purchaseOrder ? formatDate(purchaseOrder.received_date) : "—"}
+                    Received Date: {receivedDate ? formatDate(receivedDate) : "—"}
                   </div>
                   <div className="text-slate-600 dark:text-slate-300">
                     Warranty:{" "}

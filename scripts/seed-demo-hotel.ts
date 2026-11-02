@@ -421,6 +421,7 @@ async function main() {
         lifetime_years: seed.lifetime_years,
         end_of_lifetime_date: seed.end_of_lifetime_date,
         warranty_months: seed.warranty_months,
+        received_date: null,
         status: seed.status,
         notes: seed.notes,
       }),

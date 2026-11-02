@@ -6,60 +6,18 @@ import Papa from "papaparse";
 import { Download, Upload } from "lucide-react";
 import {
   importItemsBatchAction,
-  type ImportItemRow,
   type ImportRowInput,
   type ImportRowResult,
 } from "@/lib/actions/importItems";
+import {
+  IMPORT_TEMPLATE_EXAMPLE_ROW,
+  IMPORT_TEMPLATE_HEADERS,
+  REQUIRED_IMPORT_COLUMNS,
+  normalizeHeader,
+  type ImportItemRow,
+} from "@/lib/itemImport";
 
-const TEMPLATE_HEADERS = [
-  "name",
-  "category",
-  "code",
-  "serial_number",
-  "brand",
-  "item_type",
-  "quantity",
-  "acquisition_value",
-  "book_value",
-  "status",
-  "notes",
-  "building",
-  "room",
-  "department",
-  "equipment",
-  "article",
-  "assigned_employee",
-  "purchase_order",
-  "warranty_months",
-  "lifetime_years",
-  "end_of_lifetime_date",
-] as const;
-
-const TEMPLATE_EXAMPLE_ROW = [
-  "Standing Fan",
-  "Electronics",
-  "AST-001",
-  "SN12345",
-  "Panasonic",
-  "fixed_asset",
-  "1",
-  "1500000",
-  "1500000",
-  "active",
-  "Ground floor lobby",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "",
-  "12",
-  "5",
-  "",
-];
-
-const BATCH_SIZE = 15;
+const BATCH_SIZE = 100;
 
 interface ImportItemsFormProps {
   propertyId: string;
@@ -67,8 +25,8 @@ interface ImportItemsFormProps {
 
 function downloadTemplate() {
   const csv = Papa.unparse({
-    fields: [...TEMPLATE_HEADERS],
-    data: [TEMPLATE_EXAMPLE_ROW],
+    fields: [...IMPORT_TEMPLATE_HEADERS],
+    data: [IMPORT_TEMPLATE_HEADERS.map((header) => IMPORT_TEMPLATE_EXAMPLE_ROW[header])],
   });
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -108,11 +66,11 @@ export function ImportItemsForm({ propertyId }: ImportItemsFormProps) {
     Papa.parse<Record<string, string>>(file, {
       header: true,
       skipEmptyLines: true,
-      transformHeader: (header) => header.trim().toLowerCase(),
+      transformHeader: normalizeHeader,
       complete: async (parsed) => {
-        const missingColumns = ["name", "building"].filter(
+        const missingColumns = REQUIRED_IMPORT_COLUMNS.filter(
           (required) => !parsed.meta.fields?.includes(required),
-        );
+        ).map((column) => IMPORT_TEMPLATE_HEADERS.find((header) => normalizeHeader(header) === column));
         if (missingColumns.length > 0) {
           setParseError(
             `CSV is missing required column(s): ${missingColumns.join(", ")}. Download the template to see the expected columns.`,
@@ -166,10 +124,11 @@ export function ImportItemsForm({ propertyId }: ImportItemsFormProps) {
           1. Download the template
         </h2>
         <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
-          Only <strong>name</strong> and <strong>building</strong> are required. Location fields
-          (building, room, department, equipment, article, assigned employee, purchase order) are
-          matched by exact name/number against what already exists in the currently selected
-          property -- create those first if they don&apos;t exist yet.
+          The columns match the asset register spreadsheet, so you can export it as CSV and
+          upload it directly. Only <strong>Item Name</strong> and <strong>Building</strong> are
+          required. Building, Floor, Location, Department, Article (with Group) and Equipment are
+          matched by name against what already exists -- create any missing ones first.
+          Warranty is in months; dates use YYYY-MM-DD.
         </p>
         <button
           type="button"

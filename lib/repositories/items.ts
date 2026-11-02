@@ -21,7 +21,12 @@ export async function getItem(id: string): Promise<Item | null> {
   return repository.getById(id);
 }
 
-export async function createItem(input: ItemInput, photo?: File | null): Promise<Item> {
+/** `createdAt` backdates the item (used by CSV import to keep the original record date). */
+export async function createItem(
+  input: ItemInput,
+  photo?: File | null,
+  createdAt?: string,
+): Promise<Item> {
   const id = uuidv4();
   const now = new Date().toISOString();
 
@@ -38,7 +43,7 @@ export async function createItem(input: ItemInput, photo?: File | null): Promise
     ...input,
     photo_drive_file_id: photoDriveFileId,
     photo_view_link: photoViewLink,
-    created_at: now,
+    created_at: createdAt ?? now,
     updated_at: now,
   };
   return repository.create(entity);
