@@ -10,6 +10,15 @@ const nullableNumber = () =>
 const nullableString = () =>
   z.preprocess((value) => (value === "" || value === undefined ? null : value), z.string().nullable());
 
+const nullableDate = () =>
+  z.preprocess(
+    (value) => (value === "" || value === undefined ? null : value),
+    z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Date must be in YYYY-MM-DD format")
+      .nullable(),
+  );
+
 export const itemSchema = z.object({
   id: z.string().uuid(),
   property_id: z.string().uuid(),
@@ -32,6 +41,7 @@ export const itemSchema = z.object({
   lifetime_years: z.number().int().nullable(),
   end_of_lifetime_date: z.string().nullable(),
   warranty_months: z.number().int().nullable(),
+  received_date: z.string().nullable().default(null),
   status: z.enum(ITEM_STATUSES),
   notes: z.string(),
   photo_drive_file_id: z.string().nullable(),
@@ -61,6 +71,7 @@ export const itemInputSchema = z.object({
   lifetime_years: nullableNumber().default(null),
   end_of_lifetime_date: nullableString().default(null),
   warranty_months: nullableNumber().default(null),
+  received_date: nullableDate().default(null),
   status: z.enum(ITEM_STATUSES).default("active"),
   notes: z.string().trim().default(""),
 });

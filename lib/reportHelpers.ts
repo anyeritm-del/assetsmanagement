@@ -24,6 +24,14 @@ export function isDateStringInRange(
   return true;
 }
 
+/**
+ * The date an item was received: its own received_date if set, else the linked purchase order's,
+ * else when the item was created. Start date for warranty and depreciation.
+ */
+export function getItemReceivedDate(item: Item, purchaseOrder: PurchaseOrder | null | undefined): string {
+  return item.received_date || purchaseOrder?.received_date || item.created_at;
+}
+
 export function getWarrantyExpiryDate(
   item: Item,
   purchaseOrdersById: Map<string, PurchaseOrder>,
@@ -32,7 +40,7 @@ export function getWarrantyExpiryDate(
   const purchaseOrder = item.purchase_order_id
     ? purchaseOrdersById.get(item.purchase_order_id)
     : null;
-  const baseDateStr = purchaseOrder?.received_date || item.created_at;
+  const baseDateStr = getItemReceivedDate(item, purchaseOrder);
   if (!baseDateStr) return null;
   return addMonths(parseISO(baseDateStr.slice(0, 10)), item.warranty_months);
 }

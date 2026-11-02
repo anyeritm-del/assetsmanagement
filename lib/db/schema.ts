@@ -287,6 +287,9 @@ export const items = pgTable(
     lifetime_years: integer("lifetime_years"),
     end_of_lifetime_date: date("end_of_lifetime_date", { mode: "string" }),
     warranty_months: integer("warranty_months"),
+    // When the item physically arrived. Optional; when set it takes precedence over the linked
+    // purchase order's received_date for warranty/depreciation start (see getItemReceivedDate).
+    received_date: date("received_date", { mode: "string" }),
     status: text("status").$type<ItemStatus>().notNull().default("active"),
     notes: text("notes").notNull().default(""),
     ...photo,
