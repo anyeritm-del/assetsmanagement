@@ -123,8 +123,8 @@ and retry before assuming something's misconfigured.
 1. Copy `.env.example` to `.env.local` and fill in every value from the steps above.
 2. `npm install`
 3. `npm run db:migrate` (creates/updates the tables in `DATABASE_URL`)
-4. `npm run dev`, then visit http://localhost:3000 and sign in with an account on the
-   one of the `ALLOWED_EMAIL_DOMAIN` domains you configured (comma-separated, currently
+4. `npm run dev`, then visit http://localhost:3000 and sign in with a Google Workspace account
+   on one of the `ALLOWED_EMAIL_DOMAIN` domains (comma-separated, currently
    `astonhotelsinternational.com,archipelagohotels.com`).
 
 ## 7. Deploy to Vercel
