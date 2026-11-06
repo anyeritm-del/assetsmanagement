@@ -124,7 +124,8 @@ and retry before assuming something's misconfigured.
 2. `npm install`
 3. `npm run db:migrate` (creates/updates the tables in `DATABASE_URL`)
 4. `npm run dev`, then visit http://localhost:3000 and sign in with an account on the
-   `ALLOWED_EMAIL_DOMAIN` you configured (currently `astonhotelsinternational.com`).
+   one of the `ALLOWED_EMAIL_DOMAIN` domains you configured (comma-separated, currently
+   `astonhotelsinternational.com,archipelagohotels.com`).
 
 ## 7. Deploy to Vercel
 

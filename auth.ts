@@ -1,16 +1,6 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
-
-const allowedDomain = (process.env.ALLOWED_EMAIL_DOMAIN ?? "").toLowerCase();
-
-// Comma-separated exceptions (e.g. personal accounts for admins/testers) allowed to sign in
-// even though they're outside ALLOWED_EMAIL_DOMAIN.
-const allowedEmails = new Set(
-  (process.env.ALLOWED_EMAILS ?? "")
-    .split(",")
-    .map((email) => email.trim().toLowerCase())
-    .filter(Boolean),
-);
+import { isEmailAllowed } from "@/lib/emailAccess";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -27,10 +17,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   callbacks: {
     async signIn({ profile }) {
       if (!profile?.email || !profile.email_verified) return false;
-      const email = profile.email.toLowerCase();
-      if (allowedEmails.has(email)) return true;
-      if (!allowedDomain) return true;
-      return email.endsWith(`@${allowedDomain}`);
+      return isEmailAllowed(profile.email);
     },
     authorized({ auth: session }) {
       return !!session?.user;

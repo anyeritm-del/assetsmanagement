@@ -1,5 +1,6 @@
 import { Quicksand } from "next/font/google";
 import { signIn } from "@/auth";
+import { describeAllowedDomains } from "@/lib/emailAccess";
 
 const quicksand = Quicksand({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
@@ -25,7 +26,7 @@ export default async function SignInPage({
   searchParams: Promise<{ error?: string; callbackUrl?: string }>;
 }) {
   const { error, callbackUrl } = await searchParams;
-  const domain = process.env.ALLOWED_EMAIL_DOMAIN;
+  const domain = describeAllowedDomains();
 
   return (
     <div className={`${quicksand.className} flex min-h-screen w-full bg-white`}>
@@ -126,13 +127,13 @@ export default async function SignInPage({
           </span>
           <h2 className="mt-5 text-3xl font-bold text-slate-900">Welcome back</h2>
           <p className="mt-2 text-slate-500 [overflow-wrap:anywhere]">
-            Sign in with your {domain ? `@${domain}` : "Archipelago"} Google account.
+            Sign in with your {domain || "Archipelago"} Google account.
           </p>
 
           {error && (
             <p className="mt-5 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-600 [overflow-wrap:anywhere]">
               Access denied. Please sign in with an
-              {domain ? ` @${domain}` : " authorized"} account.
+              {domain ? ` ${domain}` : " authorized"} account.
             </p>
           )}
 
